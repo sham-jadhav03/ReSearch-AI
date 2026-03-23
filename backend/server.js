@@ -5,7 +5,7 @@ import connectDB from './src/config/db.js';
 connectDB();
 
 
-app.listen(3000, ()=> {
-    console.log('Server is runnig on port 3000');
+app.listen(4000, ()=> {
+    console.log('Server is runnig on port 4000');
     
 })

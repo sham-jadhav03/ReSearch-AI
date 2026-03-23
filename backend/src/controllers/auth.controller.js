@@ -1,4 +1,3 @@
-import userMOdel from "../models/user.model.js";
 import userModel from "../models/user.model.js";
 import { sendEmail } from "../services/mail.service.js";
 import jwt from "jsonwebtoken";
@@ -43,7 +42,7 @@ export const register = async (req, res) => {
     html: `<h1>Welcome to ResearchAI, ${username}!</h1>
             <p>Thank you for registering at <strong>ResearchAI</strong>. We're excited to have you on board!</p>
             <p>Please verify your email address by clicking the link below:</p>
-            <a href="http://localhost:3000/api/auth/verify-email?token${emailVerificationToken}">Verify Email</a>
+            <a href="http://localhost:4000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
             <p>If you did not create an account, please ignore this email.</p>
             <p>Best regards,<br/>The ResearchAI Team.</p> 
             `,
@@ -150,7 +149,7 @@ export const verifyEmail = async (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await userMOdel.findOne({ email: decoded.email });
+    const user = await userModel.findOne({ email: decoded.email });
 
     if (!user) {
       return res.status(400).json({
@@ -165,7 +164,7 @@ export const verifyEmail = async (req, res) => {
 
     const html = `<h1>Email Verified Successfully!</h1>
         <p>Your email has been verified. You can now log in to your account.</p>
-        <a href="http://localhost:3000/login">Go to Login</a>
+        <a href="http://localhost:4000/login">Go to Login</a>
         `;
 
     return res.send(html);
