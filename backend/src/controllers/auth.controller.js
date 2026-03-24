@@ -35,7 +35,7 @@ export const register = async (req, res) => {
     },
     process.env.JWT_SECRET,
   );
-
+  
   await sendEmail({
     to: email,
     subject: "Welcome to ResearchAI",
@@ -118,6 +118,11 @@ export const login = async (req, res) => {
   });
 };
 
+/**
+* @desc Get current logged in user's details
+* @route GET /api/auth/get-me
+* @access Private
+* */
 export const getMe = async (req, res) => {
   const userId = req.user.id;
 
