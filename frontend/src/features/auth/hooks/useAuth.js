@@ -9,6 +9,7 @@ export const useAuth = () => {
     try {
       dispatch(setLoading(true));
       const data = await register({ email, username, password });
+      dispatch(setUser(data.user))
     } catch (error) {
       dispatch(
         setError(error.response?.data?.message || "Registration failed"),

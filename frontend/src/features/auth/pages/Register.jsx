@@ -1,14 +1,28 @@
 import React, { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useAuth } from "../hooks/useAuth";
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-  }
+  const { handleRegister } = useAuth();
+
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      username,
+      email,
+      password,
+    };
+
+    await handleRegister(payload);
+    navigate("/");
+  };
 
   return (
     <>
@@ -76,7 +90,7 @@ const Register = () => {
                   placeholder="Enter your Password"
                   value={password}
                   onChange={(e) => {
-                    setPassword(e.target.password);
+                    setPassword(e.target.value);
                   }}
                   required
                   className="w-full rounded-lg border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-zinc-100 outline-none ring-0 transition focus:border-[#31b8c6] focus:shadow-[0_0_0_3px_rgba(49,184,198,0.25)]"

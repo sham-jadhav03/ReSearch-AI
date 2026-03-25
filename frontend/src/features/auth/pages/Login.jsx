@@ -8,7 +8,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
 
   const user = useSelector((state) => state.auth.user);
-  const loading = useSelector((state) => state.auth.user);
+  const loading = useSelector((state) => state.auth.loading);
 
   const { handleLogin } = useAuth();
 
@@ -40,7 +40,7 @@ const Login = () => {
               Sign in with your email and password.
             </p>
 
-            <form onChange={handleSubmit} className="mt-8 space-y-5">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>
                 <label
                   htmlFor="email"
