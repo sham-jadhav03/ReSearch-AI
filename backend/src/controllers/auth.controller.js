@@ -35,7 +35,7 @@ export const register = async (req, res) => {
     },
     process.env.JWT_SECRET,
   );
-  
+
   await sendEmail({
     to: email,
     subject: "Welcome to ResearchAI",
@@ -65,7 +65,7 @@ export const register = async (req, res) => {
  * @access Public
  * @body { email, password }
  */
-export const login = async (req, res) => {
+export async function login(req, res) {
   const { email, password } = req.body;
 
   const user = await userModel.findOne({ email });
@@ -90,9 +90,9 @@ export const login = async (req, res) => {
 
   if (!user.verified) {
     return res.status(400).json({
-      message: "please verify you email before logging in.",
+      message: "Please verify your email before logging in",
       success: false,
-      err: "Email not verified.",
+      err: "Email not verified",
     });
   }
 
@@ -108,21 +108,21 @@ export const login = async (req, res) => {
   res.cookie("token", token);
 
   res.status(200).json({
-    message: "Login successfully.",
-    status: false,
+    message: "Login successful",
+    success: true,
     user: {
       id: user._id,
       username: user.username,
       email: user.email,
     },
   });
-};
+}
 
 /**
-* @desc Get current logged in user's details
-* @route GET /api/auth/get-me
-* @access Private
-* */
+ * @desc Get current logged in user's details
+ * @route GET /api/auth/get-me
+ * @access Private
+ * */
 export const getMe = async (req, res) => {
   const userId = req.user.id;
 
