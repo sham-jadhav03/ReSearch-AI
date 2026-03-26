@@ -1,4 +1,3 @@
-import { truncates } from "bcryptjs";
 import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
@@ -11,6 +10,7 @@ const messageSchema = new mongoose.Schema(
     content: {
       type: String,
       required: true,
+      trim: true
     },
     role: {
       type: String,
