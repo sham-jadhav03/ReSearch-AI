@@ -1,0 +1,32 @@
+import axios from 'axios'
+
+const api = axios.create({
+    baseURL: "http://localhost:4000",
+    withCredentials:true
+})
+
+export const sendMessage = async ({message, chatId}) => {
+    const response = await api.post("api/chat/message", {
+        message, chatId
+    })
+
+    return response.data;
+}
+
+export const getChats = async () => {
+    const response =  await api.get(`/api/chat`)
+
+    return response.data;
+}
+
+export const getMessage = async () => {
+    const response = await api.get(`/api/chat/${chatId}/messages`)
+
+    return response.data;
+}
+
+export const deleteChat = async () => {
+    const response = await api.get(`/api/chat/delete/${chatId}`)
+
+    return response.data;
+}

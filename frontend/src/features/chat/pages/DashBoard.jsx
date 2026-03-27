@@ -1,11 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkDown from "react-markdown";
 import "remixicon/fonts/remixicon.css";
+import { useChat } from "../hooks/useChat";
+import { useSelector } from "react-redux";
 
 const DashBoard = () => {
-  const [chatInput, setChatInput] = useState("")
+  const chat = useChat();
+  const [chatInput, setChatInput] = useState("");
+
+  const chats = useSelector((state) => state.chat.chats);
+  const currentChatId = useSelector((state)=> state.chat.currentChatId);
+
+  useEffect(() => {
+    chat.intializeSocketConnect();
+    chat.handleGetChats();
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const trimmedMessage = chatInput.trim();
+    if (!trimmedMessage || !currentChatId) {
+      return;
+    }
+
+    chat.handleSendMessage({ messages: trimmedMessage, chatId: currentChatId });
+    setChatInput("");
+  };
+
+  const openChat = (chatId) => {
+    chat.handleGetChats(chatId);
   };
   return (
     <main className="min-h-screen w-full bg-[#191a1b] p-3 text-white md:p-5">
@@ -16,43 +40,62 @@ const DashBoard = () => {
           </h1>
 
           <div className="space-y-2">
-            <button className="w-full cursor-pointer rounded-xl mt-4 border border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:border-white hover:text-white">
-              chat history
-            </button>
+            {Object.values(chats ?? {}).map((chat, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  openChat(chat.id);
+                }}
+                className="w-full cursor-pointer rounded-xl mt-4 border border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:border-white hover:text-white"
+              >
+                {chat.title}
+              </button>
+            ))}
           </div>
         </aside>
 
         <section className="relative max-w-3/5 mx-auto flex h-full min-w-0 flex-1 flex-col gap-4">
           <div className="messages flex-1 space-y-3 overflow-y-auto pr-1 pb-30">
-            <div
-              className={`max-w-[82%] w-fit rounded-2xl px-4 py-3 text-sm md:text-base`}
-            >
-              <p>AI response</p>
-
-              <ReactMarkDown
-                components={{
-                  p: ({ children }) => (
-                    <p className="mb-2 last:mb-0">{children}</p>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className="mb-2 list-disc pl-5">{children}</ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="mb-2 list-decimal pl-5">{children}</ol>
-                  ),
-                  code: ({ children }) => (
-                    <code className="rounded bg-white/10 py-0.5">
-                      {children}
-                    </code>
-                  ),
-                  pre: ({ children }) => (
-                    <pre className="mb-2 overflow-x-auto rounded-xl bg-black/30 p-3">
-                      {children}
-                    </pre>
-                  ),
-                }}
-              ></ReactMarkDown>
-            </div>
+            {chats[currentChatId]?.messages.map((message) => (
+              <div
+                key={message.id}
+                className={`max-w-[82%] w-fit rounded-2xl px-4 py-3 text-sm md:text-base ${
+                  message.role === "user"
+                    ? "ml-auto rounded-br-none bg-white/12 text-white"
+                    : "mr-auto border border-white/25 bg-[#0f1626] text-white/90"
+                }`}
+              >
+                {message.role === "user" ? (
+                  <p>{message.content}</p>
+                ) : (
+                  <ReactMarkDown
+                    components={{
+                      p: ({ children }) => (
+                        <p className="mb-2 last:mb-0">{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="mb-2 list-disc pl-5">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="mb-2 list-decimal pl-5">{children}</ol>
+                      ),
+                      code: ({ children }) => (
+                        <code className="rounded bg-white/10 py-0.5">
+                          {children}
+                        </code>
+                      ),
+                      pre: ({ children }) => (
+                        <pre className="mb-2 overflow-x-auto rounded-xl bg-black/30 p-3">
+                          {children}
+                        </pre>
+                      ),
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkDown>
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="rounded-3xl w-full absolute bottom-2 border border-white/60 bg-[#080b12] p-4 md:p-5">
@@ -77,6 +120,7 @@ const DashBoard = () => {
               />
               <button
                 type="submit"
+                disabled={!chatInput.trim()}
                 className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg hover:bg-blue-700 cursor-pointer"
               >
                 <i className="ri-arrow-up-line"></i>
