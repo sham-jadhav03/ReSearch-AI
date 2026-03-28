@@ -15,22 +15,22 @@ export const sendMessage = async (req, res) => {
     });
   }
 
-  const currentChatId = chatId || chat.id;
+  // const currentChatId = chatId || chat._id;
 
    await messageModel.create({
-    chat: currentChatId,
+    chat: chatId || chat._id,
     content: message,
     role: "user",
   });
 
   const messages = await messageModel.find({
-    chat: currentChatId,
+    chat: chatId || chat._id,
   });
 
   const result = await generateResponse(messages);
 
   const aiMessage = await messageModel.create({
-    chat: currentChatId,
+    chat: chatId || chat._id,
     content: result,
     role: "ai",
   });

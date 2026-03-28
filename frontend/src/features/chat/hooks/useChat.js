@@ -24,7 +24,7 @@ export const useChat = () => {
             content:aiMessage.content,
             role:aiMessage.role,
         }))
-        dispatch(setCurrentChatId(chat.id))
+        dispatch(setCurrentChatId(chat._id))
     }
 
     async function handleGetChats() {

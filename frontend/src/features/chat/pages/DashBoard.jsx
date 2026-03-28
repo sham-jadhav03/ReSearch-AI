@@ -20,7 +20,7 @@ const DashBoard = () => {
     e.preventDefault();
 
     const trimmedMessage = chatInput.trim();
-    if (!trimmedMessage || !currentChatId) {
+    if (!trimmedMessage) {
       return;
     }
 

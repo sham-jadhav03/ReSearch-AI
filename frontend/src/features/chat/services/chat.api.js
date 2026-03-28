@@ -19,13 +19,13 @@ export const getChats = async () => {
     return response.data;
 }
 
-export const getMessage = async () => {
+export const getMessage = async ({chatId}) => {
     const response = await api.get(`/api/chat/${chatId}/messages`)
 
     return response.data;
 }
 
-export const deleteChat = async () => {
+export const deleteChat = async ({chatId}) => {
     const response = await api.get(`/api/chat/delete/${chatId}`)
 
     return response.data;
