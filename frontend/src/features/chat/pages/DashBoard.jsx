@@ -24,12 +24,12 @@ const DashBoard = () => {
       return;
     }
 
-    chat.handleSendMessage({ messages: trimmedMessage, chatId: currentChatId });
+   chat.handleSendMessage({ message: trimmedMessage, chatId: currentChatId });
     setChatInput("");
   };
 
   const openChat = (chatId) => {
-    chat.handleGetChats(chatId);
+   chat.handleOpenChat(chatId);
   };
   return (
     <main className="min-h-screen w-full bg-[#191a1b] p-3 text-white md:p-5">

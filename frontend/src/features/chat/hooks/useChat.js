@@ -1,5 +1,5 @@
 import { intializeSocketConnect } from "../services/chat.socket";
-import { sendMessage, getChats, getMessage, deleteChat } from "../services/chat.api";
+import { sendMessage, getChats, getMessages, deleteChat } from "../services/chat.api";
 import {addMessages, addNewMessage, createNewChat, setChats, setCurrentChatId, setLoading} from '../slices/chat.slices'
 import {useDispatch} from 'react-redux'
 
@@ -35,7 +35,7 @@ export const useChat = () => {
             acc[chat._id] = {
                 id:chat._id,
                 title: chat.title,
-                message:[],
+                messages:[],
                 lastUpdated:chat.updatedAt,
             }
             return acc;
@@ -45,7 +45,7 @@ export const useChat = () => {
 
     async function handleOpenChat(chatId) {
         
-        const data = await getMessage(chatId)
+        const data = await getMessages({chatId})
         const {messages} = data
 
         const formattedMessages = messages.map(msg =>({

@@ -4,7 +4,7 @@ import { generateChatTitle, generateResponse } from "../services/ai.service.js";
 
 export const sendMessage = async (req, res) => {
   const { message, chat: chatId } = req.body;
-
+   
   let title=null, chat=null
 
   if (!chatId) {

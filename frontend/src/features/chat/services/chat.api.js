@@ -7,7 +7,8 @@ const api = axios.create({
 
 export const sendMessage = async ({message, chatId}) => {
     const response = await api.post("api/chat/message", {
-        message, chatId
+        message, 
+        chat: chatId
     })
 
     return response.data;
@@ -19,7 +20,7 @@ export const getChats = async () => {
     return response.data;
 }
 
-export const getMessage = async ({chatId}) => {
+export const getMessages = async ({chatId}) => {
     const response = await api.get(`/api/chat/${chatId}/messages`)
 
     return response.data;
