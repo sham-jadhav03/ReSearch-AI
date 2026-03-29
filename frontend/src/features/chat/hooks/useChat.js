@@ -11,63 +11,80 @@ import {
   createNewChat,
   setChats,
   setCurrentChatId,
+  setError,
   setLoading,
 } from "../slices/chat.slices";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 export const useChat = () => {
   const dispatch = useDispatch();
+  const chats = useSelector((state) => state.chat.chats);
 
   async function handleSendMessage({ message, chatId }) {
-    dispatch(setLoading(true));
-    const data = await sendMessage({ message, chatId });
-    const { chat, aiMessage } = data;
-    if(!chatId)
-    dispatch(
-      createNewChat({
-        chatId: chat?._id,
-        title: chat.title,
-      }),
-    );
-    dispatch(
-      addNewMessage({
-        chatId: chat?._id,
-        content: message,
-        role: "user",
-      }),
-    );
-    dispatch(
-      addNewMessage({
-        chatId: chat?._id,
-        content: aiMessage.content,
-        role: aiMessage.role,
-      }),
-    );
-    dispatch(setCurrentChatId(chat?._id));
+    try {
+      dispatch(setLoading(true));
+      const data = await sendMessage({ message, chatId });
+      const { chat, aiMessage } = data;
+      if (!chatId)
+        dispatch(
+          createNewChat({
+            chatId: chat?._id,
+            title: chat.title,
+          }),
+        );
+      dispatch(
+        addNewMessage({
+          chatId: chat?._id,
+          content: message,
+          role: "user",
+        }),
+      );
+      dispatch(
+        addNewMessage({
+          chatId: chat?._id,
+          content: aiMessage.content,
+          role: aiMessage.role,
+        }),
+      );
+      dispatch(setCurrentChatId(chat?._id));
+    } catch (error) {
+      dispatch(
+        setError(error.response?.data.message || "Unable to send message."),
+      );
+    } finally {
+      dispatch(setLoading(false));
+    }
   }
 
   async function handleGetChats() {
-    dispatch(setLoading(true));
-    const data = await getChats();
-    const { chats } = data;
-    dispatch(
-      setChats(
-        chats.reduce((acc, chat) => {
-          acc[chat?._id] = {
-            id: chat?._id,
-            title: chat.title,
-            messages: [],
-            lastUpdated: chat.updatedAt,
-          };
-          return acc;
-        }, {}),
-      ),
-    );
-    dispatch(setLoading(false));
+    try {
+      dispatch(setLoading(true));
+      const data = await getChats();
+      const { chats } = data;
+      dispatch(
+        setChats(
+          chats.reduce((acc, chat) => {
+            acc[chat?._id] = {
+              id: chat?._id,
+              title: chat.title,
+              messages: [],
+              lastUpdated: chat.updatedAt,
+            };
+            return acc;
+          }, {}),
+        ),
+      );
+    } catch (error) {
+      dispatch(
+        setError(error.response?.data.message || "Unable to get message"),
+      );
+    } finally {
+      dispatch(setLoading(false));
+    }
   }
 
   async function handleOpenChat(chatId) {
-    if (!chats[chatId]?.messages.length === 0) {
+    if (!chats[chatId]?.messages?.length) {
       const data = await getMessages({ chatId });
       const { messages } = data;
 
@@ -86,10 +103,19 @@ export const useChat = () => {
     dispatch(setCurrentChatId(chatId));
   }
 
+  async function handleDeleteChat(chatId) {
+    dispatch(setLoading(true))
+    await deleteChat({ chatId })
+    dispatch(deleteChat(chatId))
+    dispatch(setCurrentChatId(null))
+    dispatch(setLoading(false))
+  }
+
   return {
     intializeSocketConnect,
     handleSendMessage,
     handleGetChats,
     handleOpenChat,
+    handleDeleteChat,
   };
 };

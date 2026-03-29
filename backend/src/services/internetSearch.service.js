@@ -9,5 +9,11 @@ export const internetSearch = async ({ query }) => {
     maxResults: 5,
   });
 
-  return JSON.stringify(results);
+  const updateResult = results.results.map((item) => ({
+    title: item.title,
+    url: item.url,
+    content: item.content,
+  }));
+
+  return JSON.stringify(updateResult)
 };

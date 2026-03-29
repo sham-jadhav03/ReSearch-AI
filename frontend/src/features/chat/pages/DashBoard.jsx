@@ -41,13 +41,23 @@ const DashBoard = () => {
           </h1>
 
           <div className="space-y-2">
+            <button
+              onClick={() => {
+                openChat(chat.id);
+              }}
+              className="w-full cursor-pointer rounded-xl mt-4 border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:bg-[#282727] hover:text-white"
+            >
+              <i className="ri-edit-line">
+                <span className="chat ml-3 text-white font-bold">New Chat</span>
+              </i>
+            </button>
             {Object.values(chats ?? {}).map((chat, index) => (
               <button
                 key={index}
                 onClick={() => {
                   openChat(chat.id);
                 }}
-                className="w-full cursor-pointer rounded-xl mt-4 border border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:border-white hover:text-white"
+                className="w-full cursor-pointer rounded-xl mt-4 border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:bg-[#3b3b3b] hover:text-white"
               >
                 {chat.title}
               </button>
@@ -100,7 +110,7 @@ const DashBoard = () => {
             ))}
           </div>
 
-          <div className="rounded-3xl w-full absolute bottom-2 border border-white/60 bg-[#080b12] p-4 md:p-5">
+          <div className="rounded-3xl w-full absolute bottom-2 border-white/60 bg-[#121212] p-4 md:p-5">
             <form
               onSubmit={handleSubmit}
               className="rounded-full bg-[#2f2f2f] px-4 py-3 flex items-center shadow-lg"
