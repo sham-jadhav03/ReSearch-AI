@@ -3,13 +3,14 @@ import ReactMarkDown from "react-markdown";
 import "remixicon/fonts/remixicon.css";
 import { useChat } from "../hooks/useChat";
 import { useSelector } from "react-redux";
+import remarkGfm from "remark-gfm";
 
 const DashBoard = () => {
   const chat = useChat();
   const [chatInput, setChatInput] = useState("");
 
   const chats = useSelector((state) => state.chat.chats);
-  const currentChatId = useSelector((state)=> state.chat.currentChatId);
+  const currentChatId = useSelector((state) => state.chat.currentChatId);
 
   useEffect(() => {
     chat.intializeSocketConnect();
@@ -24,12 +25,12 @@ const DashBoard = () => {
       return;
     }
 
-   chat.handleSendMessage({ message: trimmedMessage, chatId: currentChatId });
+    chat.handleSendMessage({ message: trimmedMessage, chatId: currentChatId });
     setChatInput("");
   };
 
   const openChat = (chatId) => {
-   chat.handleOpenChat(chatId);
+    chat.handleOpenChat(chatId, chats);
   };
   return (
     <main className="min-h-screen w-full bg-[#191a1b] p-3 text-white md:p-5">
@@ -62,7 +63,7 @@ const DashBoard = () => {
                 className={`max-w-[82%] w-fit rounded-2xl px-4 py-3 text-sm md:text-base ${
                   message.role === "user"
                     ? "ml-auto rounded-br-none bg-white/12 text-white"
-                    : "mr-auto border border-white/25 bg-[#0f1626] text-white/90"
+                    : "mr-auto border-none text-white/90"
                 }`}
               >
                 {message.role === "user" ? (
@@ -90,6 +91,7 @@ const DashBoard = () => {
                         </pre>
                       ),
                     }}
+                    remarkPlugins={[remarkGfm]}
                   >
                     {message.content}
                   </ReactMarkDown>
