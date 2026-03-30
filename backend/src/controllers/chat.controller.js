@@ -1,9 +1,12 @@
 import chatModel from "../models/chat.model.js";
 import messageModel from "../models/message.model.js";
 import { generateChatTitle, generateResponse } from "../services/ai.service.js";
+import { getIo } from "../socket/server.socket.js";
 
 export const sendMessage = async (req, res) => {
   const { message, chat: chatId } = req.body;
+  const io = getIo;
+  const userId = req.user.id.toString();
    
   let title=null, chat=null
 
@@ -27,13 +30,30 @@ export const sendMessage = async (req, res) => {
     chat: chatId || chat._id,
   });
 
-  const result = await generateResponse(messages);
+  io.to(userId).emit("ai:start", {chatId: chatId || chat._id})
+
+  const result = await generateResponse(messages, (chunk)=> {
+       io.to(userId).emit("ai:token", {
+        chatId: chatId || chat._id,
+        chunk
+       })
+  });
+
+  if(!result){
+    io.to(userId).emit("ai:error", {chatId: chatId || chat._id });
+    return;
+  }
 
   const aiMessage = await messageModel.create({
     chat: chatId || chat._id,
     content: result,
     role: "ai",
   });
+
+  io.to(userId).emit("ai:done", {
+    chatId: chatId || chat._id,
+    aiMessage
+  })
 
   res.status(201).json({
     title,

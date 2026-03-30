@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkDown from "react-markdown";
 import "remixicon/fonts/remixicon.css";
 import { useChat } from "../hooks/useChat";
@@ -7,13 +7,23 @@ import remarkGfm from "remark-gfm";
 
 const DashBoard = () => {
   const chat = useChat();
+  const { streamingText, isStreaming } = chat;
+
   const [chatInput, setChatInput] = useState("");
+  const messageEndRef = useRef(null);
 
   const chats = useSelector((state) => state.chat.chats);
   const currentChatId = useSelector((state) => state.chat.currentChatId);
+  const streamingBuffer = useSelector((state) => state.chat.streamingBuffer);
+  const isLoading = useSelector((state) => state.chat.isLoading);
+  const currentMessages = chats[currentChatId]?.messages || [];
 
   useEffect(() => {
-    chat.intializeSocketConnect();
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [currentMessages, streamingText]);
+
+  useEffect(() => {
+    // chat.intializeSocketConnect();  // handle inside useChat
     chat.handleGetChats();
   }, []);
 
@@ -33,13 +43,14 @@ const DashBoard = () => {
     chat.handleOpenChat(chatId, chats);
   };
 
-  const deleteChat = (e, chatId) =>{
-    e.stopPropagation()
-    chat.handleDeleteChat(chatId)
-  }
+  const deleteChat = (e, chatId) => {
+    e.stopPropagation();
+    chat.handleDeleteChat(chatId);
+  };
   return (
     <main className="min-h-screen w-full bg-[#191a1b] p-3 text-white md:p-5">
       <section className="mx-auto flex h-[calc(100vh-1.5rem)] w-full gap-4 rounded-3xl border p-1 md:h-[calc(100vh-2.5rem)] md:gap-6 md:p-1 border-none">
+        {/* Sidebar */}
         <aside className="hidden h-full w-72 shrink-0 rounded-3xl bg-[#202020] p-4 md:flex md:flex-col">
           <h1 className="md-5 text-2xl font-semibold tracking-tight">
             ReSearchAI
@@ -70,22 +81,23 @@ const DashBoard = () => {
               >
                 <span>{chat.title}</span>
 
-                <i onClick={(e)=> {
-                  deleteChat(e, chat.id)
-                }}
-                className="ri-delete-bin-3-line opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white hover:text-red-300"
-                >
-                </i>
+                <i
+                  onClick={(e) => {
+                    deleteChat(e, chat.id);
+                  }}
+                  className="ri-delete-bin-3-line opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white hover:text-red-300"
+                ></i>
               </button>
             ))}
           </div>
         </aside>
 
+        {/* Chat Area */}
         <section className="relative max-w-3/5 mx-auto flex h-full min-w-0 flex-1 flex-col gap-4">
           <div className="messages flex-1 space-y-3 overflow-y-auto pr-1 pb-30">
-            {chats[currentChatId]?.messages.map((message) => (
+            {currentMessages.map((message, index) => (
               <div
-                key={message.id}
+                key={index}
                 className={`max-w-[82%] w-fit rounded-2xl px-4 py-3 text-sm md:text-base ${
                   message.role === "user"
                     ? "ml-auto rounded-br-none bg-white/12 text-white"
@@ -96,6 +108,7 @@ const DashBoard = () => {
                   <p>{message.content}</p>
                 ) : (
                   <ReactMarkDown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       p: ({ children }) => (
                         <p className="mb-2 last:mb-0">{children}</p>
@@ -117,13 +130,57 @@ const DashBoard = () => {
                         </pre>
                       ),
                     }}
-                    remarkPlugins={[remarkGfm]}
                   >
                     {message.content}
                   </ReactMarkDown>
                 )}
               </div>
             ))}
+
+            {/* Thinking indicator  */}
+            {isLoading && !streamingText && (
+              <div className="mr-auto flex items-center gap-1 px-4 py-3">
+                <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce [animation-delay:300ms]" />
+              </div>
+            )}
+
+            {/* streaming bubble */}
+            {isStreaming && streamingText && (
+              <div className="mr-auto max-w-[82%] w-fit rounded-2xl px-4 py-3 text-sm md:text-base border-none text-white/90">
+                <ReactMarkDown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => (
+                      <p className="mb-2 last:mb-0">{children}</p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="mb-2 list-disc pl-5">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="mb-2 list-decimal pl-5">{children}</ol>
+                    ),
+                    code: ({ children }) => (
+                      <code className="rounded bg-white/10 py-0.5">
+                        {children}
+                      </code>
+                    ),
+                    pre: ({ children }) => (
+                      <pre className="mb-2 overflow-x-auto rounded-xl bg-black/30 p-3">
+                        {children}
+                      </pre>
+                    ),
+                  }}
+                >
+                  {streamingText}
+                </ReactMarkDown>
+
+                <span className="inline-block w-2 h-4 bg-white/70 ml-1 animate-pulse rounded-sm" />
+              </div>
+            )}
+
+            <div ref={messageEndRef} />
           </div>
 
           <div className="rounded-3xl w-full absolute bottom-2 border-white/60 bg-[#121212] p-4 md:p-5">
@@ -148,7 +205,7 @@ const DashBoard = () => {
               />
               <button
                 type="submit"
-                disabled={!chatInput.trim()}
+                disabled={!chatInput.trim() || isLoading}
                 className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg hover:bg-blue-700 cursor-pointer"
               >
                 <i className="ri-arrow-up-line"></i>

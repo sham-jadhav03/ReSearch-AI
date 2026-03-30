@@ -33,27 +33,50 @@ const agent = createAgent({
   tools: [searchInternetTool],
 });
 
-export const generateResponse = async (message) => {
+export const generateResponse = async (message, onChunk) => {
   console.log(message);
 
-  const response = await agent.invoke({
-    messages: [
-      new SystemMessage(`
+  const response = await agent.stream(
+    {
+      messages: [
+        new SystemMessage(`
         You are a helpful and precise assistant for answering questions.
         If you don't know the answer, say you don't know.
-        If the question requires up-to-date information, use the "internetSearch" tool to get the latest information from the internet and then answer based on the search results`
-      ),
-      ... message.map((msg) => {
-      if (msg.role == "user") {
-        return new HumanMessage(msg.content);
-      } else if (msg.role == "ai") {
-        return new AIMessage(msg.content);
-      }
-    }),
-    ]
-  });
+        If the question requires up-to-date information, use the "internetSearch" tool to get the latest information from the internet and then answer based on the search results`),
+        ...message.map((msg) => {
+          if (msg.role == "user") {
+            return new HumanMessage(msg.content);
+          } else if (msg.role == "ai") {
+            return new AIMessage(msg.content);
+          }
+        }),
+      ],
+    },
+    { streamMode: "messages" },
+  );
 
-  return response.messages[response.messages.length-1].text;
+  let finalMessage = "";
+
+  for await (const [chunk, metadata] of response){
+    let text = "";
+
+    if(typeof chunk?.content === "string" && chunk.content){
+      text = chunk.content
+    }
+    else if (Array.isArray(chunk?.content)){
+      text = chunk.content
+             .filter((c)=> c.type === "text")
+             .map((c)=> c.text)
+             .join("")
+    }
+
+    if(text){
+      finalMessage += text;
+      if(onChunk) onChunk(text);
+    }
+  }
+
+  return finalMessage;
 };
 
 export const generateChatTitle = async (message) => {

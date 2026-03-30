@@ -13,8 +13,15 @@ export const initSocket = (httpServer) => {
     console.log("Socket.io server is RUNNING");
     
     io.on("connection", (socket)=>{
+        const userId = socket.handshake.auth?.userId;
+        if(userId){
+            socket.join(userId)
+            console.log(`User ${userId} joined their room.`);
+            
+        }
         console.log("A user connected "+socket.id)
     })
+    return io;
 }
 
 export const getIo = () => {

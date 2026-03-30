@@ -7,6 +7,7 @@ const chatSlice = createSlice({
     currentChatId: null,
     isLoading: true,
     error: null,
+    streamingBuffer: {},
   },
   reducers: {
     createNewChat: (state, action) => {
@@ -34,6 +35,19 @@ const chatSlice = createSlice({
         state.currentChatId = null;
       }
     },
+    appendStreamingChunk: (state, action) => {
+       const {chatId, chunk} = action.payload;
+
+       if(!state.streamingBuffer[chatId]){
+        state.streamingBuffer[chatId] = "";
+       }
+       state.streamingBuffer[chatId] += chunk;
+    },
+    finalizeStreamingMessage: (state, action) => {
+      const {chatId, aiMessage} = action.payload;
+      state.chats[chatId].messages.push(aiMessage);
+      state.streamingBuffer[chatId] = "";
+    },
     setChats: (state, action) => {
       state.chats = action.payload
     },
@@ -49,5 +63,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { setChats, setCurrentChatId, setLoading, setError, createNewChat, addMessages, addNewMessage, deleteChat } = chatSlice.actions;
+export const { setChats, setCurrentChatId, setLoading, setError, createNewChat, addMessages, addNewMessage, deleteChat, appendStreamingChunk, finalizeStreamingMessage } = chatSlice.actions;
 export default chatSlice.reducer
