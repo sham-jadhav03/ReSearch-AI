@@ -3,12 +3,13 @@ import {
   sendMessage,
   getChats,
   getMessages,
-  deleteChat,
+  deleteChat as deleteChatApi
 } from "../services/chat.api";
 import {
   addMessages,
   addNewMessage,
   createNewChat,
+  deleteChat,
   setChats,
   setCurrentChatId,
   setError,
@@ -104,11 +105,15 @@ export const useChat = () => {
   }
 
   async function handleDeleteChat(chatId) {
-    dispatch(setLoading(true))
-    await deleteChat({ chatId })
-    dispatch(deleteChat(chatId))
-    dispatch(setCurrentChatId(null))
-    dispatch(setLoading(false))
+    try {
+      dispatch(setLoading(true))
+
+      await deleteChatApi({chatId});
+
+      dispatch(deleteChat({chatId}))
+    } catch (error) {
+      dispatch(setError(error.response?.data.message || "Unable to delete chat."))
+    }
   }
 
   return {

@@ -32,6 +32,11 @@ const DashBoard = () => {
   const openChat = (chatId) => {
     chat.handleOpenChat(chatId, chats);
   };
+
+  const deleteChat = (e, chatId) =>{
+    e.stopPropagation()
+    chat.handleDeleteChat(chatId)
+  }
   return (
     <main className="min-h-screen w-full bg-[#191a1b] p-3 text-white md:p-5">
       <section className="mx-auto flex h-[calc(100vh-1.5rem)] w-full gap-4 rounded-3xl border p-1 md:h-[calc(100vh-2.5rem)] md:gap-6 md:p-1 border-none">
@@ -47,9 +52,13 @@ const DashBoard = () => {
               }}
               className="w-full cursor-pointer rounded-xl mt-4 border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:bg-[#282727] hover:text-white"
             >
-              <i className="ri-edit-line">
-                <span className="chat ml-3 text-white font-bold">New Chat</span>
-              </i>
+              <div>
+                <i className="ri-edit-line">
+                  <span className="chat ml-3 text-white font-bold">
+                    New Chat
+                  </span>
+                </i>
+              </div>
             </button>
             {Object.values(chats ?? {}).map((chat, index) => (
               <button
@@ -57,9 +66,16 @@ const DashBoard = () => {
                 onClick={() => {
                   openChat(chat.id);
                 }}
-                className="w-full cursor-pointer rounded-xl mt-4 border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:bg-[#3b3b3b] hover:text-white"
+                className="group w-full cursor-pointer rounded-xl mt-4 border-white/60 bg-transparent px-3 py-2 text-left text-base font-medium text-white/90 transition hover:bg-[#3b3b3b] hover:text-white flex items-center justify-between"
               >
-                {chat.title}
+                <span>{chat.title}</span>
+
+                <i onClick={(e)=> {
+                  deleteChat(e, chat.id)
+                }}
+                className="ri-delete-bin-3-line opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white hover:text-red-300"
+                >
+                </i>
               </button>
             ))}
           </div>
