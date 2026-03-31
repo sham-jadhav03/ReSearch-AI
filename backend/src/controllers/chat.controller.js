@@ -1,6 +1,6 @@
 import chatModel from "../models/chat.model.js";
 import messageModel from "../models/message.model.js";
-import { generateChatTitle, generateResponse } from "../services/ai.service.js";
+import { buildContext, generateChatTitle, generateResponse, parseCitations } from "../services/ai.service.js";
 import { getIo } from "../socket/server.socket.js";
 
 export const sendMessage = async (req, res) => {
@@ -26,16 +26,18 @@ export const sendMessage = async (req, res) => {
     role: "user",
   });
 
-  const messages = await messageModel.find({
+  const allMessages = await messageModel.find({
     chat: chatId || chat._id,
   });
 
+  const contextMessages = await buildContext(allMessages)
+
   io.to(userId).emit("ai:start", {chatId: chatId || chat._id})
 
-  const result = await generateResponse(messages, (chunk)=> {
+  const result = await generateResponse(contextMessages, (token)=> {
        io.to(userId).emit("ai:token", {
         chatId: chatId || chat._id,
-        chunk
+        token
        })
   });
 
@@ -44,6 +46,8 @@ export const sendMessage = async (req, res) => {
     return;
   }
 
+  const {answer, citations} = await parseCitations(result)
+  
   const aiMessage = await messageModel.create({
     chat: chatId || chat._id,
     content: result,
@@ -52,7 +56,9 @@ export const sendMessage = async (req, res) => {
 
   io.to(userId).emit("ai:done", {
     chatId: chatId || chat._id,
-    aiMessage
+    aiMessage,
+    content: answer,
+    citations
   })
 
   res.status(201).json({

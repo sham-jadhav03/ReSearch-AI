@@ -51,7 +51,8 @@ export const useChat = () => {
       dispatch(addMessages({
         chatId,
         content: aiMessage.content,
-        role: aiMessage.role
+        role: aiMessage.role,
+        citations: citations || [],
       }))
       setStreamingText("")
       setIsStreaming(false)
