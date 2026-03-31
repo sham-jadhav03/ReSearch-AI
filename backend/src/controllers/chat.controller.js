@@ -5,7 +5,7 @@ import { getIo } from "../socket/server.socket.js";
 
 export const sendMessage = async (req, res) => {
   const { message, chat: chatId } = req.body;
-  const io = getIo;
+  const io = getIo();
   const userId = req.user.id.toString();
    
   let title=null, chat=null
