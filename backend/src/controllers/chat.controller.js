@@ -1,6 +1,6 @@
 import chatModel from "../models/chat.model.js";
 import messageModel from "../models/message.model.js";
-import { buildContext, generateChatTitle, generateResponse, parseCitations } from "../services/ai.service.js";
+import { buildContext, formatResponse, generateChatTitle, generateResponse, parseCitations } from "../services/ai.service.js";
 import { getIo } from "../socket/server.socket.js";
 
 export const sendMessage = async (req, res) => {
@@ -46,11 +46,12 @@ export const sendMessage = async (req, res) => {
     return;
   }
 
-  const {answer, citations} = await parseCitations(result)
+  const parsed = await parseCitations(result)
+  const {answer, citations, hasCitations} = await formatResponse(parsed)
   
   const aiMessage = await messageModel.create({
     chat: chatId || chat._id,
-    content: result,
+    content: answer,
     role: "ai",
   });
 
@@ -58,7 +59,8 @@ export const sendMessage = async (req, res) => {
     chatId: chatId || chat._id,
     aiMessage,
     content: answer,
-    citations
+    citations,
+    hasCitations
   })
 
   res.status(201).json({

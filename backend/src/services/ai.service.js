@@ -113,43 +113,62 @@ export const generateChatTitle = async (message) => {
   return response.text;
 };
 
-const MAX_MESSAGES = 10;  
+const MAX_MESSAGES = 10;
 
 export const buildContext = (message) => {
   /*
   Take last 10 messages only
    */
   const recentMessages = message.slice(-MAX_MESSAGES);
-  
+
   return recentMessages;
-}
+};
 
 export const parseCitations = (rawResponse) => {
-  if(!rawResponse) return {answer:"", citations: []};
+  if (!rawResponse) return { answer: "", citations: [] };
 
-  const sourceSplit = rawResponse.split(/\*\*Sources\*\*|##\s*Sources|Sources:/i)
+  const sourceSplit = rawResponse.split(
+    /\*\*Sources\*\*|##\s*Sources|Sources:/i,
+  );
 
-  const answer = sourceSplit[0].trim()
+  const answer = sourceSplit[0].trim();
   const sourceBlock = sourceSplit[1]?.trim() || "";
 
-  if(!sourceBlock) {
-    return {answer, citations: []}
+  if (!sourceBlock) {
+    return { answer, citations: [] };
   }
 
   const citations = [];
-  const lines = sourceBlock.split("\n").filter((line) => line.trim())
+  const lines = sourceBlock.split("\n").filter((line) => line.trim());
 
-  for(const line of lines){
-    const match = line.match(/\[(\d+)\]\s+(.+?)\s+-\s+(https?:\/\/\S+)/)
+  for (const line of lines) {
+    const match = line.match(/\[(\d+)\]\s+(.+?)\s+-\s+(https?:\/\/\S+)/);
 
-    if(match){
+    if (match) {
       citations.push({
         index: parseInt(match[1]),
         title: match[2].trim(),
-        url:match[3].trim()
-      })
+        url: match[3].trim(),
+      });
     }
   }
 
-  return {answer, citations}
-}
+  return { answer, citations };
+};
+
+export const formatResponse = ({ answer, citations }) => {
+  if (!answer) {
+    return { answer: "", citations: [], hasCitations: false };
+  }
+
+  const cleanAnswer = answer
+    .trim()
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+$/gm, "");
+
+  return {
+    answer: cleanAnswer,
+    citations: citations || [],
+    hasCitations: citations?.length > 0,
+  };
+};

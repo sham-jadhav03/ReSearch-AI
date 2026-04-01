@@ -47,12 +47,13 @@ export const useChat = () => {
       setStreamingText(streamingBufferRef.current)
     });
 
-    socket.on("ai:done", ({chatId, aiMessage})=>{
+    socket.on("ai:done", ({chatId, aiMessage, citations, hasCitations})=>{
       dispatch(addMessages({
         chatId,
         content: aiMessage.content,
         role: aiMessage.role,
         citations: citations || [],
+        hasCitations: hasCitations || false,
       }))
       setStreamingText("")
       setIsStreaming(false)

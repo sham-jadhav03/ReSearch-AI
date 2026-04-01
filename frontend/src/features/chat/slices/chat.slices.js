@@ -20,11 +20,12 @@ const chatSlice = createSlice({
       };
     },
     addNewMessage: (state, action) => {
-      const { chatId, content, role, citations } = action.payload;
+      const { chatId, content, role, citations, hasCitations } = action.payload;
       state.chats[chatId].messages.push({
         content,
         role,
         citations: citations || [],
+        hasCitations: hasCitations || false
       });
     },
     addMessages: (state, action) => {
