@@ -34,11 +34,12 @@ export const useAuth = () => {
   async function handleGetMe() {
     try {
       dispatch(setLoading(true));
-      const data = await getMe();
+      const data = await getMe()
       dispatch(setUser(data.user));
     } catch (error) {
       dispatch(
-        setError(error.response?.data.message || "Failed to fetch user data"),
+        dispatch(setUser(null)),
+        setError(error.response?.data?.message || "Failed to fetch user data"),
       );
     } finally {
       dispatch(setLoading(false));

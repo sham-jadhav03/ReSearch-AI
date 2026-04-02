@@ -85,13 +85,7 @@ export const useChat = () => {
           role: "user",
         }),
       );
-      dispatch(
-        addNewMessage({
-          chatId: chat?._id,
-          content: aiMessage.content,
-          role: aiMessage.role,
-        }),
-      );
+      
       dispatch(setCurrentChatId(chat?._id));
     } catch (error) {
       setIsStreaming(false)
@@ -171,5 +165,7 @@ export const useChat = () => {
     handleGetChats,
     handleOpenChat,
     handleDeleteChat,
+    isStreaming,
+    streamingText,
   };
 };
