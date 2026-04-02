@@ -15,5 +15,7 @@ export const internetSearch = async ({ query }) => {
     content: item.content,
   }));
 
-  return JSON.stringify(updateResult)
+  return updateResult
+    .map((r, i) => `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content}`)
+    .join("\n\n");
 };

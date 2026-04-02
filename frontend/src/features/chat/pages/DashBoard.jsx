@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
 import { setCurrentChatId } from "../slices/chat.slices";
 import LogoIcon from "../components/LogoIcon";
+import Sidebar from "../components/Sidebar";
 
 const markdownComponents = {
   p: ({ children }) => (
@@ -18,7 +19,7 @@ const markdownComponents = {
     <ol className="mb-2 list-decimal pl-5 space-y-1">{children}</ol>
   ),
   code: ({ children }) => (
-    <code className="rounded bg-white/8 px-1.5 py-0.5 font-mono text-[13px] text-blue-300">
+    <code className="rounded-2xl text-lg px-1.5 py-0.5 font-mono text-[13px] text-blue-200">
       {children}
     </code>
   ),
@@ -66,7 +67,7 @@ const DashBoard = () => {
   const currentChatId = useSelector((state) => state.chat.currentChatId);
   const isLoading = useSelector((state) => state.chat.isLoading);
   const currentMessages = chats[currentChatId]?.messages || [];
-  const currentChatTitle = chats[currentChatId]?.messages || null;
+  const currentChatTitle = chats[currentChatId]?.title || null;
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -78,7 +79,7 @@ const DashBoard = () => {
   }, []);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
 
     const trimmedMessage = chatInput.trim();
     if (!trimmedMessage || isLoading) {
@@ -92,6 +93,10 @@ const DashBoard = () => {
 
   const openChat = (chatId) => {
     chat.handleOpenChat(chatId, chats);
+  };
+
+  const handleSuggestion = (text) => {
+    chat.handleSendMessage({ message: text, chatId: null });
   };
 
   const deleteChat = (e, chatId) => {
@@ -108,63 +113,21 @@ const DashBoard = () => {
   return (
     <main className="flex h-screen w-full overflow-hidden bg-[#0f0f10] text-white">
       {/* Sidebar*/}
-      <aside className="hidden md:flex flex-col w-62.5 min-w-62.5 h-full bg-[#161618] border-r border-white/[0.07]">
-        <div className="flex items-center gap-2.5 px-4 py-5 border-b border-white/[0.07]">
-          <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
-            <LogoIcon size={16} />
-          </div>
-          <span className="text-[15px] font-medium tracking-[-0.2px] text-white">
-            ResearchAI
-          </span>
-        </div>
+      <Sidebar
+        deleteChat={deleteChat}
+        startNewChat={startNewChat}
+        openChat={openChat}
+        chats={chats}
+        currentChatId ={currentChatId}
+      />
 
-        <div className="px-3 pt-3">
-          <button
-            onClick={startNewChat}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-dashed border-white/13 text-[#888892] text-[13px] hover:border-blue-500 hover:text-blue-400 hover:bg-blue-500/[0.08] transition-all duration-200 cursor-pointer"
-          >
-            <i className="ri-add-line text-base" />
-            New chat
-          </button>
-        </div>
-
-        {/* Chat list */}
-        <div className="flex-1 overflow-y-auto px-3 pt-3 pb-4 space-y-0.5">
-          {Object.values(chats).length > 0 && (
-            <p className="text-[10px] font-medium tracking-[0.8px] uppercase text-white/20 px-2 pb-2 pt-1">
-              Recent
-            </p>
-          )}
-          {Object.values(chats ?? {}).map((chat, index) => (
-            <button
-              key={index}
-              onClick={() => openChat(chat.id)}
-              className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150 border cursor-pointer text-left
-                ${
-                  currentChatId === chat.id
-                    ? "bg-blue-500/12 border-blue-500/2 text-white"
-                    : "border-transparent text-[#888892] hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90"
-                }`}
-            >
-              <span className="truncate flex-1 text-left">{chat.title}</span>
-              <span
-                onClick={(e) => deleteChat(e, chat.id)}
-                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 transition-all duration-150 flex-shrink-0 ml-1"
-              >
-                <i className="ri-delete-bin-3-line text-xs text-red-400" />
-              </span>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      {/* ── Main Chat Area ───────────────────────────────────────────────── */}
+      {/* Main Chat Area */}
       <section className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-white/[0.07] bg-[#161618] flex-shrink-0">
+        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-white/[0.07] bg-[#161618] shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
           <span className="text-[13px] text-[#888892]">
-            {currentChatTitle || "New conversation"}
+            {currentChatTitle || "New Chat"}
           </span>
         </div>
 
@@ -191,7 +154,7 @@ const DashBoard = () => {
                     <button
                       key={s}
                       onClick={() => handleSuggestion(s)}
-                      className="px-4 py-2 rounded-full border border-white/[0.1] bg-white/[0.04] text-[12px] text-white/50 hover:border-blue-500/50 hover:text-blue-400 hover:bg-blue-500/[0.08] transition-all duration-150 cursor-pointer"
+                      className="px-4 py-2 rounded-full border border-white/10 bg-white/4 text-[12px] text-white/50 hover:border-blue-500/50 hover:text-blue-400 hover:bg-blue-500/8 transition-all duration-150 cursor-pointer"
                     >
                       {s}
                     </button>
@@ -207,7 +170,7 @@ const DashBoard = () => {
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-2`}
               >
                 {message.role === "ai" && (
-                  <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0 mr-3 mt-1 self-start">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center shrink-0 mr-3 mt-1 self-start">
                     <LogoIcon size={13} />
                   </div>
                 )}
@@ -217,7 +180,7 @@ const DashBoard = () => {
                     className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed
                       ${
                         message.role === "user"
-                          ? "bg-[#1e2a3d] border border-blue-500/[0.2] text-[#c8d8f4] rounded-br-sm"
+                          ? "bg-[#1e2a3d] border border-blue-500/2 text-[#c8d8f4] rounded-br-sm"
                           : "bg-transparent text-[#d8d8e0]"
                       }`}
                   >
@@ -228,7 +191,10 @@ const DashBoard = () => {
                         remarkPlugins={[remarkGfm]}
                         components={markdownComponents}
                       >
-                        {message.content}
+                        {typeof message.content === "string"
+                          ? message.content
+                          : message.content?.content ||
+                            JSON.stringify(message.content)}
                       </ReactMarkDown>
                     )}
                   </div>
@@ -244,12 +210,12 @@ const DashBoard = () => {
                             href={citation.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1c1c1f] border border-white/[0.08] text-[11px] text-white/50 hover:border-blue-500/40 hover:text-blue-400 transition-all duration-150 cursor-pointer"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1c1c1f] border border-white/8 text-[11px] text-white/50 hover:border-blue-500/40 hover:text-blue-400 transition-all duration-150 cursor-pointer"
                           >
                             <span className="text-blue-400 font-medium font-mono text-[10px]">
                               [{citation.index}]
                             </span>
-                            <span className="truncate max-w-[130px]">
+                            <span className="truncate max-w-32.5">
                               {citation.title}
                             </span>
                             <i className="ri-external-link-line text-white/25 text-[10px]" />
@@ -280,7 +246,7 @@ const DashBoard = () => {
             {/* Streaming bubble */}
             {isStreaming && (
               <div className="flex justify-start mb-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0 mr-3 mt-1 self-start">
+                <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center shrink-0 mr-3 mt-1 self-start">
                   <LogoIcon size={13} />
                 </div>
                 <div className="max-w-[78%] text-[14px] leading-relaxed text-[#d8d8e0]">
@@ -294,7 +260,7 @@ const DashBoard = () => {
                   ) : null}
                   {/* Blinking cursor */}
                   <span
-                    className="inline-block w-[2px] h-[15px] bg-blue-400 ml-0.5 rounded-sm align-text-bottom"
+                    className="inline-block w-0.5 h-3.75 bg-blue-400 ml-0.5 rounded-sm align-text-bottom"
                     style={{ animation: "blink 0.9s step-end infinite" }}
                   />
                 </div>
@@ -305,11 +271,11 @@ const DashBoard = () => {
           </div>
         </div>
 
-        {/* ── Input Area ─────────────────────────────────────────────────── */}
+        {/* Input Area */}
         <div className="shrink-0 px-4 pb-5 pt-3 bg-[#0f0f10] border-t border-white/5">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-end gap-2.5 bg-[#1a1a1d] border border-white/8 rounded-2xl px-4 py-3 transition-all duration-200 focus-within:border-blue-500/50 focus-within:shadow-[0_0_0_3px_rgba(79,142,247,0.1)]">
-              {/* Attach button */}
+              {/* Attach button->file send */}
               <button
                 type="button"
                 className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/8 text-white/30 hover:text-white/60 hover:border-white/15 hover:bg-white/5 transition-all duration-150 shrink-0 self-end mb-0.5 cursor-pointer"
@@ -331,8 +297,8 @@ const DashBoard = () => {
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
+                    e?.preventDefault();
+                    handleSubmit(e);
                   }
                 }}
                 placeholder="Ask anything..."
