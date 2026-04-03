@@ -40,19 +40,6 @@ const chatSlice = createSlice({
         state.currentChatId = null;
       }
     },
-    appendStreamingChunk: (state, action) => {
-      const { chatId, chunk } = action.payload;
-
-      if (!state.streamingBuffer[chatId]) {
-        state.streamingBuffer[chatId] = "";
-      }
-      state.streamingBuffer[chatId] += chunk;
-    },
-    finalizeStreamingMessage: (state, action) => {
-      const { chatId, aiMessage } = action.payload;
-      state.chats[chatId].messages.push(aiMessage);
-      state.streamingBuffer[chatId] = "";
-    },
     setChats: (state, action) => {
       state.chats = action.payload;
     },
@@ -77,7 +64,5 @@ export const {
   addMessages,
   addNewMessage,
   deleteChat,
-  appendStreamingChunk,
-  finalizeStreamingMessage,
 } = chatSlice.actions;
 export default chatSlice.reducer;

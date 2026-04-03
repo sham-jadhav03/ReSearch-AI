@@ -8,8 +8,6 @@ import {
 import {
   addMessages,
   addNewMessage,
-  appendStreamingChunk,
-  finalizeStreamingMessage,
   createNewChat,
   deleteChat,
   setChats,

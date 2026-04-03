@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
-import Navbar from "./shared/Navbar";
+import Navbar from "../components/Navbar";
 
-// ─── Feature cards data ───────────────────────────────────────────────────────
+// Feature cards data 
 const FEATURES = [
   {
     icon: "ri-search-eye-line",
@@ -41,7 +41,7 @@ const STATS = [
   { value: "100%", label: "Source transparency" },
 ];
 
-// ─── Feature Card ─────────────────────────────────────────────────────────────
+// Feature Card
 const FeatureCard = ({ icon, title, desc }) => (
   <div style={{
     background: "rgba(255,255,255,0.03)",
@@ -79,8 +79,8 @@ const FeatureCard = ({ icon, title, desc }) => (
   </div>
 );
 
-// ─── Main Landing Page ────────────────────────────────────────────────────────
-const Loading = () => {
+// Main Landing Page
+const Landing = () => {
   const navigate = useNavigate();
 
   return (
@@ -98,7 +98,7 @@ const Loading = () => {
 
       <Navbar />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      {/* Hero */}
       <section style={{
         minHeight: "100vh", display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
@@ -235,7 +235,7 @@ const Loading = () => {
         </div>
       </section>
 
-      {/* ── Features ─────────────────────────────────────────────────────── */}
+      {/* Features */}
       <section id="features" style={{ padding: "100px 48px", maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: "60px" }}>
           <p style={{
@@ -262,7 +262,7 @@ const Loading = () => {
         </div>
       </section>
 
-      {/* ── How it works ─────────────────────────────────────────────────── */}
+      {/* How it works */}
       <section style={{
         padding: "100px 48px", textAlign: "center",
         background: "rgba(255,255,255,0.015)",
@@ -315,7 +315,7 @@ const Loading = () => {
         </div>
       </section>
 
-      {/* ── Bottom CTA ───────────────────────────────────────────────────── */}
+      {/* Bottom CTA */}
       <section style={{
         padding: "120px 24px", textAlign: "center",
         position: "relative", overflow: "hidden",
@@ -357,7 +357,7 @@ const Loading = () => {
         </button>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      {/* Footer */}
       <footer style={{
         borderTop: "1px solid rgba(255,255,255,0.06)",
         padding: "24px 48px",
@@ -395,4 +395,4 @@ const Loading = () => {
   );
 };
 
-export default Loading;
+export default Landing;
