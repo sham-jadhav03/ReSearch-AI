@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router";
 import "../styles/navbar.css";
+import LogoIcon from "./LogoIcon";
+import { navLink } from "../shared/global";
 
-const Navbar = ({ onLaunch }) => {
+const Navbar = () => {
   const navigate = useNavigate();
 
   return (
@@ -9,16 +11,14 @@ const Navbar = ({ onLaunch }) => {
       {/* Logo */}
       <div className="navbar__logo">
         <div className="navbar__logo-icon">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="white">
-            <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" />
-          </svg>
+          <LogoIcon size={16} />
         </div>
         <span className="navbar__logo-text">ResearchAI</span>
       </div>
 
       {/* Nav links */}
       <div className="navbar__links">
-        {["Features", "How it works", "About"].map((item) => (
+        {navLink.map((item) => (
           <a key={item} href="#" className="navbar__link">
             {item}
           </a>

@@ -1,5 +1,5 @@
 import React from 'react'
-import LogoIcon from "../components/LogoIcon";
+import LogoIcon from "../shared/LogoIcon";
 
 const Sidebar = (props)=> {
 

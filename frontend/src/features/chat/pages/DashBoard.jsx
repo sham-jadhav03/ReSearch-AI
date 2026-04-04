@@ -5,7 +5,7 @@ import { useChat } from "../hooks/useChat";
 import { useDispatch, useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
 import { setCurrentChatId } from "../slices/chat.slices";
-import LogoIcon from "../components/LogoIcon";
+import LogoIcon from "../shared/LogoIcon";
 import Sidebar from "../components/Sidebar";
 
 const markdownComponents = {
