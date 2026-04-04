@@ -128,28 +128,35 @@ Endpoints are completely categorized, safeguarded, logging-enabled (via Morgan),
 ## 🗂 Project Architecture & Directory Structure
 ```text
 Research-AI/
-├── backend/                  # Server-side Application & Logic
-│   ├── .env                  # Local Environment Variables & Secrets
-│   ├── server.js             # Networking Bootstrapper & Socket Initializer
+├── backend/                  # Server-side environment & application logic
+│   ├── .env                  # Environment Variables (MongoDB connection, API Keys, JWT Secrets)
+│   ├── package.json          # Server dependencies (Express, Mongoose, Socket.io, Langchain)
+│   ├── server.js             # Initial bootstrapper, Node.js HTTP server & Socket adapter
 │   └── src/
-│       ├── app.js            # Express Initialization, CORS, and Middlewares
-│       ├── config/           # Fundamental configurations (MongoDB connectDB)
-│       ├── controllers/      # Function declarations matching API Routes
-│       ├── middlewares/      # Security guards, Authentication wrappers
-│       ├── models/           # Document definitions & schemas
-│       ├── routes/           # Concrete path routing declarations
-│       ├── services/         # Business logic and external API integrations
-│       ├── socket/           # WebSocket real-time operational handlers
-│       └── validators/       # Input Request constraint logic
+│       ├── app.js            # Main Express configurations, Middlewares, and CORS options
+│       ├── config/           # Setup definitions (`db.js` connecting Mongoose to DB)
+│       ├── controllers/      # Core functions executing behind API Routes (`auth.controller.js`)
+│       ├── middlewares/      # Security wrappers validating token permissions (`auth.middleware.js`)
+│       ├── models/           # DB schema representations (`chat.model.js`, `message.model.js`)
+│       ├── routes/           # Exposed endpoint mappings handling public/private traffic
+│       ├── services/         # Complex logic integrations (`ai.service.js`, `internetSearch.service.js`)
+│       ├── socket/           # WebSocket processors capturing individual payloads
+│       └── validators/       # Input requirement sanitization and request verification
 │
-└── frontend/                 # Client-Side Web Application GUI
-    ├── vite.config.js        # Modern compilation module bundler config
-    ├── eslint.config.js      # Code standard lint configuration
-    ├── index.html            # Webpack structural entry foundation
+└── frontend/                 # Client-Side Web Application dynamic interface
+    ├── vite.config.js        # Modern rapid module bundler core configuration
+    ├── eslint.config.js      # System formatter defining standards & strict linting
+    ├── package.json          # Client resources (React v19, Redux Toolkit, Tailwind CSS v4)
+    ├── index.html            # Root DOM template fundamentally mounting the application
     └── src/
-        ├── APP/              # Core layout styling (`index.css`) & config structure
-        ├── features/         # Features module folders separated by topic (`auth`, `chat`)
-        └── main.jsx          # Frontend tree DOM initiator
+        ├── APP/              # Core global application structures targeting the parent layout
+        │   ├── index.css     # Root CSS & standard Tailwind framework imports
+        │   ├── routes/       # React Router DOM hierarchical view pathway settings
+        │   └── store/        # Central Redux definitions tying UI slices deeply together
+        ├── features/         # Scalable feature-based module pattern separating logic zones
+        │   ├── auth/         # Encapsulated Authentication tree (Login, Register, `auth.api.js`)
+        │   └── chat/         # Encapsulated Live Chat tree (Sidebar, `useChat.js`, `chat.socket.js`)
+        └── main.jsx          # Root rendering pipeline firing the Vite/React ecosystem
 ```
 
 ---

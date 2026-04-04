@@ -3,6 +3,7 @@ import Login from "../../features/auth/pages/Login";
 import Register from "../../features/auth/pages/Register";
 import DashBoard from "../../features/chat/pages/DashBoard";
 import Protected from "../../features/auth/components/Protected";
+import Landing from "../../features/chat/pages/Landing";
 
 export const router = createBrowserRouter([
   {
@@ -22,7 +23,11 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard",
+    path: "/",
     element: <Navigate to="/" replace />,
   },
+  {
+    path: '/landing',
+    element: <Landing />
+  }
 ]);
