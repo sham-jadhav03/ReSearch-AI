@@ -46,3 +46,10 @@ export const Pipeline = [
 ];
 
 export const navLink = ["Features", "How it works", "About"]
+
+export const SUGGESTIONS = [
+  "Latest breakthroughs in AI",
+  "How does RAG work?",
+  "Explain transformers",
+  "Best practices in Node.js",
+];

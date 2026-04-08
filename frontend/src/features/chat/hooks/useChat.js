@@ -34,19 +34,19 @@ export const useChat = () => {
     const socket = intializeSocketConnect(user._id);
     socketRef.current = socket;
 
-    socket.on("ai:start", ({ chatId }) => {
+    socket.on("ai:start", () => {
       streamingBufferRef.current = ""
       setStreamingText("");
       setIsStreaming(true)
     });
 
-    socket.on("ai:token", ({ chatId, token }) => {
+    socket.on("ai:token", ({ token }) => {
       streamingBufferRef.current += token
       setStreamingText(streamingBufferRef.current)
     });
 
     socket.on("ai:done", ({chatId, aiMessage, citations, hasCitations})=>{
-      dispatch(addMessages({
+      dispatch(addNewMessage({
         chatId,
         content: aiMessage.content,
         role: aiMessage.role,
@@ -56,7 +56,7 @@ export const useChat = () => {
       setStreamingText("")
       setIsStreaming(false)
       streamingBufferRef.current="";
-      dispatch(setLoading());
+      dispatch(setLoading(false));
     })
 
     return () => {
@@ -68,32 +68,33 @@ export const useChat = () => {
     try {
       dispatch(setLoading(true));
       const data = await sendMessage({ message, chatId });
-      const { chat, aiMessage } = data;
+      const { chat, title, currentChatId } = data;
+
+      const resolvedChatId = chatId || currentChatId || chat?._id;
+
       if (!chatId)
         dispatch(
           createNewChat({
-            chatId: chat?._id,
-            title: chat.title,
+            chatId: resolvedChatId,
+            title: title,
           }),
         );
       dispatch(
         addNewMessage({
-          chatId: chat?._id,
+          chatId: resolvedChatId,
           content: message,
           role: "user",
         }),
       );
       
-      dispatch(setCurrentChatId(chat?._id));
+      dispatch(setCurrentChatId(resolvedChatId));
     } catch (error) {
       setIsStreaming(false)
       dispatch(setLoading(false))
       dispatch(
         setError(error.response?.data.message || "Unable to send message."),
       );
-    } finally {
-      dispatch(setLoading(false));
-    }
+    } 
   }
 
   async function handleGetChats() {
@@ -154,6 +155,8 @@ export const useChat = () => {
       dispatch(
         setError(error.response?.data.message || "Unable to delete chat."),
       );
+    } finally {
+      dispatch(setLoading(false))
     }
   }
 

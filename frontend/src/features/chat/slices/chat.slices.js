@@ -5,9 +5,8 @@ const chatSlice = createSlice({
   initialState: {
     chats: {},
     currentChatId: null,
-    isLoading: true,
+    isLoading: false,
     error: null,
-    streamingBuffer: {},
   },
   reducers: {
     createNewChat: (state, action) => {
@@ -21,15 +20,17 @@ const chatSlice = createSlice({
     },
     addNewMessage: (state, action) => {
       const { chatId, content, role, citations, hasCitations } = action.payload;
+      if (!state.chats[chatId]) return;
       state.chats[chatId].messages.push({
         content,
         role,
         citations: citations || [],
-        hasCitations: hasCitations || false
+        hasCitations: hasCitations || false,
       });
     },
     addMessages: (state, action) => {
       const { chatId, messages } = action.payload;
+      if (!state.chats[chatId]) return;
       state.chats[chatId].messages.push(...messages);
     },
     deleteChat: (state, action) => {
