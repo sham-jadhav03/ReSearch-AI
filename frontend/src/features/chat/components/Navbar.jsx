@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import "../styles/navbar.css";
-import LogoIcon from "./LogoIcon";
+import LogoIcon from "../shared/LogoIcon";
 import { navLink } from "../shared/global";
 
 const Navbar = () => {

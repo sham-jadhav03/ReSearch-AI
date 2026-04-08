@@ -4,6 +4,7 @@ import Register from "../../features/auth/pages/Register";
 import DashBoard from "../../features/chat/pages/DashBoard";
 import Protected from "../../features/auth/components/Protected";
 import Landing from "../../features/chat/pages/Landing";
+import Profile from "../../features/chat/pages/Profile";
 
 export const router = createBrowserRouter([
   {
@@ -29,5 +30,9 @@ export const router = createBrowserRouter([
   {
     path: '/landing',
     element: <Landing />
+  },
+  {
+    path: '/profile',
+    element: <Profile />
   }
 ]);

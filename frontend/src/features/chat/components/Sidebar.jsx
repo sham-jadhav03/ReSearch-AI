@@ -1,11 +1,14 @@
 import React from 'react'
 import LogoIcon from "../shared/LogoIcon";
+import { useNavigate } from 'react-router'
 
-const Sidebar = (props)=> {
+const Sidebar = (props) => {
+
+  const navigate = useNavigate();
 
   return (
     <>
-       <aside className="hidden md:flex flex-col w-62.5 min-w-62.5 h-full bg-[#161618] border-r border-white/[0.07]">
+      <aside className="hidden md:flex flex-col w-62.5 min-w-62.5 h-full bg-[#161618] border-r border-white/[0.07]">
         <div className="flex items-center gap-2.5 px-4 py-5 border-b border-white/[0.07]">
           <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
             <LogoIcon size={16} />
@@ -37,10 +40,9 @@ const Sidebar = (props)=> {
               key={index}
               onClick={() => props.openChat(chat.id)}
               className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150 border cursor-pointer text-left
-                ${
-                  props.currentChatId === chat.id
-                    ? "bg-blue-500/12 border-blue-500/2 text-white"
-                    : "border-transparent text-[#888892] hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90"
+                ${props.currentChatId === chat.id
+                  ? "bg-blue-500/12 border-blue-500/2 text-white"
+                  : "border-transparent text-[#888892] hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90"
                 }`}
             >
               <span className="truncate flex-1 text-left">{chat.title}</span>
@@ -53,6 +55,15 @@ const Sidebar = (props)=> {
             </button>
           ))}
         </div>
+
+        {/* user profile */}
+        <div className='bottom-1'>
+          <button onClick={()=>{ navigate('/profile')}} className='cursor-pointer flex items-center gap-2.5 px-4 py-5 border-b border-white/[0.07] w-full hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90'>
+            <i className='ri-user-3-line text-base'></i>
+            <span className='text-white font-semibold'>Profile</span>
+          </button>
+        </div>
+
       </aside>
     </>
   )

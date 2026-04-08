@@ -1,5 +1,3 @@
-
-
 export const FeatureCard = ({ icon, title, desc }) => (
   <div className="feature-card">
     <div className="feature-card__icon">
@@ -9,7 +7,6 @@ export const FeatureCard = ({ icon, title, desc }) => (
     <p className="feature-card__desc">{desc}</p>
   </div>
 );
-
 
 export const Fonts = () => {
   return (

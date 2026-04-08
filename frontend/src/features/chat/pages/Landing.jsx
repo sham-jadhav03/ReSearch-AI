@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import Navbar from "../components/Navbar";
 import "../styles/landing.css";
-import LogoIcon from "../components/LogoIcon";
+import LogoIcon from "../shared/LogoIcon";
 import { FEATURES, Pipeline, STATS } from "../shared/global";
 import { FeatureCard, Fonts } from "../components/Reuse";
 
