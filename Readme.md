@@ -10,6 +10,7 @@ Welcome to **Research-AI**! This is a full-stack, real-time chat application bui
 - [Complete Project Workflow](#-complete-project-workflow)
 - [AI Integration & Services](#-ai-integration--services)
 - [Frontend-Backend Integration](#-frontend-backend-integration)
+- [UI Component Architecture](#-ui-component-architecture)
 - [API Endpoints](#-api-endpoints)
 - [Project Architecture & Directory Structure](#-project-architecture--directory-structure)
 ---
@@ -102,6 +103,27 @@ Instead of tangling direct API calls and state management inside generic React D
 
 ---
 
+## 🎨 UI Component Architecture & Formatting
+The `frontend/src/features/chat` module constructs an advanced, highly-reactive interface combining complex React hooks with dynamic Markdown rendering. Key architectural elements include:
+
+### 1. `DashBoard.jsx` (The Core Layout)
+- Operates as the central command component syncing `useChat` custom hooks dynamically with the Redux `useSelector` store layout.
+- Provides native loading animations ("Thinking dots" using mapped bounce delays) resolving synchronously while the AI model computes in the background.
+- Captures real-time strings into native `isStreaming` mapping beautifully to a blinking tail cursor via keyframe animations.
+- Automatically handles UX scroll positions natively using `scrollIntoView()` bounded into an array tracking `useEffect`.
+- Processes deep footer map representations natively isolating AI "Sources" into interactive `href` citation bars exactly like modern LLM clients!
+
+### 2. `MarkdownComponents.jsx` (Sophisticated Parsing)
+AI responses contain complex formatting structurally powered by `react-markdown` applying `remarkGfm` plugins to enable syntax logic. 
+- **Dynamic `<CodeBlock>`**: Intercepts generic `code` outputs embedding custom syntax headers, overflow configurations, and crucially, an interactive `onCopy` state pushing code strings securely into `navigator.clipboard`.
+- **Inline Web Citations**: An incredibly deep Regex parsing mechanism resolving the AI's internal response footnotes (e.g. `[1]`). Operations structurally bind index markers alongside payload URLs to generate dynamically clickable inline footnotes exactly matching the Tavily Search integration!
+
+### 3. `ChatInput.jsx` (Reactive Form Controls)
+- Contains an interactive `textarea` mathematically auto-resizing up to a `120px` height cap calculating strictly via `ta.scrollHeight`.
+- Listens actively intercepting physical keyboard `Enter` actions directly binding to `handleSubmit` preventing API racing conditions by disabling inputs dynamically relying on Redux's `isLoading` prop state.
+
+---
+
 ## 🔌 API Endpoints
 Endpoints are completely categorized, safeguarded, logging-enabled (via Morgan), and highly cohesive. A complete list revolves around:
 
@@ -126,37 +148,92 @@ Endpoints are completely categorized, safeguarded, logging-enabled (via Morgan),
 ---
 
 ## 🗂 Project Architecture & Directory Structure
+
 ```text
 Research-AI/
-├── backend/                  # Server-side environment & application logic
-│   ├── .env                  # Environment Variables (MongoDB connection, API Keys, JWT Secrets)
-│   ├── package.json          # Server dependencies (Express, Mongoose, Socket.io, Langchain)
-│   ├── server.js             # Initial bootstrapper, Node.js HTTP server & Socket adapter
-│   └── src/
-│       ├── app.js            # Main Express configurations, Middlewares, and CORS options
-│       ├── config/           # Setup definitions (`db.js` connecting Mongoose to DB)
-│       ├── controllers/      # Core functions executing behind API Routes (`auth.controller.js`)
-│       ├── middlewares/      # Security wrappers validating token permissions (`auth.middleware.js`)
-│       ├── models/           # DB schema representations (`chat.model.js`, `message.model.js`)
-│       ├── routes/           # Exposed endpoint mappings handling public/private traffic
-│       ├── services/         # Complex logic integrations (`ai.service.js`, `internetSearch.service.js`)
-│       ├── socket/           # WebSocket processors capturing individual payloads
-│       └── validators/       # Input requirement sanitization and request verification
 │
-└── frontend/                 # Client-Side Web Application dynamic interface
-    ├── vite.config.js        # Modern rapid module bundler core configuration
-    ├── eslint.config.js      # System formatter defining standards & strict linting
-    ├── package.json          # Client resources (React v19, Redux Toolkit, Tailwind CSS v4)
-    ├── index.html            # Root DOM template fundamentally mounting the application
-    └── src/
-        ├── APP/              # Core global application structures targeting the parent layout
-        │   ├── index.css     # Root CSS & standard Tailwind framework imports
-        │   ├── routes/       # React Router DOM hierarchical view pathway settings
-        │   └── store/        # Central Redux definitions tying UI slices deeply together
-        ├── features/         # Scalable feature-based module pattern separating logic zones
-        │   ├── auth/         # Encapsulated Authentication tree (Login, Register, `auth.api.js`)
-        │   └── chat/         # Encapsulated Live Chat tree (Sidebar, `useChat.js`, `chat.socket.js`)
-        └── main.jsx          # Root rendering pipeline firing the Vite/React ecosystem
+├── backend/                      # Server-side environment & application logic
+│   ├── src/
+│   │   ├── config/               # Database and server configurations
+│   │   │   └── db.js             # Mongoose connection setup (MongoDB)
+│   │   ├── controllers/          # Business logic handlers for specific routes
+│   │   │   ├── auth.controller.js # Logic for user registration, login, and logout
+│   │   │   └── chat.controller.js # Logic for handling chats and AI responses
+│   │   ├── middlewares/          # Security and request interceptors
+│   │   │   └── auth.middleware.js # Middleware to verify JWT tokens in cookies
+│   │   ├── models/               # MongoDB schema definitions using Mongoose
+│   │   │   ├── chat.model.js     # Schema for conversation metadata
+│   │   │   ├── message.model.js  # Schema for individual chat messages
+│   │   │   └── user.model.js     # Schema for user profiles and credentials
+│   │   ├── routes/               # API endpoint definitions mapping to controllers
+│   │   │   ├── auth.routes.js    # Routes for auth-related actions
+│   │   │   └── chat.routes.js    # Routes for chat and message management
+│   │   ├── services/             # Specialized logic and external integrations
+│   │   │   ├── ai.service.js     # Core AI logic (Gemini & Mistral integration)
+│   │   │   ├── internetSearch.service.js # Tavily Search API implementation
+│   │   │   └── mail.service.js   # Email dispatch logic for verification
+│   │   ├── socket/               # Real-time communication processors
+│   │   │   └── server.socket.js  # Backend Socket.io event listeners
+│   │   ├── validators/           # Request body validation and sanitization
+│   │   │   └── auth.validator.js # Joi/Zod validators for auth inputs
+│   │   └── app.js                # Main Express application configuration
+│   ├── package.json              # Backend dependencies and execution scripts
+│   ├── server.js                 # Entry point for the server and socket mounting
+│   └── .env                      # Environment secrets (MongoDB, API Keys, JWT)
+│
+└── frontend/                     # Client-Side Application (React + Vite)
+    ├── public/                   # Static assets accessible globally
+    │   └── vite.svg              # Vite branding asset
+    ├── src/
+    │   ├── APP/                  # Global application-level logic & styling
+    │   │   ├── routes/
+    │   │   │   └── AppRoutes.jsx # Navigation routing (Public vs Protected)
+    │   │   ├── store/
+    │   │   │   └── App.store.js  # Centralized Redux store setup
+    │   │   ├── App.jsx           # Root UI Layout component
+    │   │   └── index.css         # Global CSS & Tailwind directives
+    │   ├── features/             # Scalable feature-based directory pattern
+    │   │   ├── auth/             # Authentication & User Management
+    │   │   │   ├── components/
+    │   │   │   │   └── Protected.jsx # Authorization wrapper for routes
+    │   │   │   ├── hooks/
+    │   │   │   │   └── useAuth.js   # Hook for calling registration/login
+    │   │   │   ├── pages/
+    │   │   │   │   ├── Login.jsx    # User Login page interface
+    │   │   │   │   └── Register.jsx # Account creation page interface
+    │   │   │   ├── services/
+    │   │   │   │   └── auth.api.js  # Axios endpoints for Auth API
+    │   │   │   └── slice/
+    │   │   │       └── auth.slice.js # Global Auth state (User, Status)
+    │   │   └── chat/             # Interactive Assistant & Real-time Chat
+    │   │       ├── components/
+    │   │       │   ├── ChatInput.jsx # Interactive message composition field
+    │   │       │   ├── MarkdownComponents.jsx # Rich rendering for AI responses
+    │   │       │   ├── Navbar.jsx    # Application top navigation menu
+    │   │       │   ├── Reuse.jsx     # Collection of reusable UI elements
+    │   │       │   └── Sidebar.jsx   # List of active conversations/history
+    │   │       ├── hooks/
+    │   │       │   └── useChat.js    # logic for AI response & Socket flow
+    │   │       ├── pages/
+    │   │       │   ├── DashBoard.jsx # The main primary chat dashboard
+    │   │       │   ├── Landing.jsx   # Project Overview & Welcome page
+    │   │       │   └── Profile.jsx   # User identity & security settings
+    │   │       ├── services/
+    │   │       │   ├── chat.api.js   # Axios endpoints for Chat/History API
+    │   │       │   └── chat.socket.js # Client-side Socket.io initialization
+    │   │       ├── shared/
+    │   │       │   ├── global.js     # Shared UI constants & helper functions
+    │   │       │   └── LogoIcon.jsx  # Scalable logo component
+    │   │       ├── slices/
+    │   │       │   └── chat.slices.js # Global Chat state (Messages, Threads)
+    │   │       └── styles/
+    │   │           ├── landing.css   # Styles specifically for Landing page
+    │   │           └── navbar.css    # Styles specifically for Navbar
+    │   └── main.jsx                  # Main React mount point and entry script
+    ├── eslint.config.js          # ESLint rules for code quality
+    ├── index.html                # Root HTML template for the SPA
+    ├── package.json              # Frontend dependencies (React, Redux, etc.)
+    └── vite.config.js            # Vite bundler configuration and proxying
 ```
 
 ---
