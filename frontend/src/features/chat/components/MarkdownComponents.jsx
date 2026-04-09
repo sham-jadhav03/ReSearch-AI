@@ -1,36 +1,5 @@
-import { useState } from "react";
-
-const CodeBlock = ({ children, className }) => {
-  const [copied, setCopied] = useState(false);
-  const language = className?.replace("language-", "") || "code";
-
-  const onCopy = () => {
-    const text = Array.isArray(children) ? children.join("") : children;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="group relative my-6 overflow-hidden rounded-xl bg-[#0d0d0f] border border-white/10 shadow-lg">
-      <div className="flex items-center justify-between bg-[#161617] px-4 py-2.5 text-xs text-white/50 border-b border-white/5">
-        <span className="font-mono uppercase tracking-wider">{language}</span>
-        <button
-          onClick={onCopy}
-          className="flex items-center gap-1.5 transition-colors hover:text-white"
-        >
-          <i className={copied ? "ri-check-line text-emerald-400" : "ri-clipboard-line"} />
-          {copied ? "Copied!" : "Copy code"}
-        </button>
-      </div>
-      <div className="p-4 overflow-x-auto">
-        <code className={`${className} block text-[#e0e0e0] font-mono leading-relaxed`}>
-          {children}
-        </code>
-      </div>
-    </div>
-  );
-};
+import CodeBlock from "../components/ui/CodeBlock";
+import CitationChip from "./ui/CitationChip";
 
 export const renderWithCitations = (children, citations) => {
   if (!citations?.length || typeof children !== "string") return children;
@@ -41,21 +10,12 @@ export const renderWithCitations = (children, citations) => {
     const match = part.match(/\[(\d+)\]/);
     if (match) {
       const citationIndex = match[1];
-      const citation = citations.find((c) => c.index === parseInt(citationIndex));
+      const citation = citations.find(
+        (c) => c.index === parseInt(citationIndex),
+      );
 
       if (citation) {
-        return (
-          <a
-            key={i}
-            href={citation.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-4 h-4 mx-0.5 translate-y-[-4px] rounded-full bg-white/10 border border-white/10 text-[9px] font-bold text-white/60 hover:bg-white/20 hover:text-white transition-all no-underline shrink-0"
-            title={citation.title}
-          >
-            {citationIndex}
-          </a>
-        );
+        return <CitationChip key={i} citation={citation} index={match[1]} />;
       }
     }
 
@@ -73,18 +33,21 @@ export const buildMarkdownComponents = (citations = []) => ({
     <ul className="mb-5 list-disc pl-6 space-y-2 text-[#ececf1]">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="mb-5 list-decimal pl-6 space-y-2 text-[#ececf1]">{children}</ol>
+    <ol className="mb-5 list-decimal pl-6 space-y-2 text-[#ececf1]">
+      {children}
+    </ol>
   ),
   li: ({ children }) => (
-    <li className="leading-relaxed">
-      {renderWithCitations(
-        typeof children === "string" ? children : null,
-        citations || children,
-      )}
+    <li className="leading-relaxed text-[#ececf1]">
+      {typeof children === "string"
+        ? renderWithCitations(children, citations)
+        : children}
     </li>
   ),
   code: ({ children, className }) => {
-    const isBlock = className?.includes("language-") || (typeof children === "string" && children.includes("\n"));
+    const isBlock =
+      className?.includes("language-") ||
+      (typeof children === "string" && children.includes("\n"));
     return isBlock ? (
       <CodeBlock className={className}>{children}</CodeBlock>
     ) : (
@@ -95,13 +58,19 @@ export const buildMarkdownComponents = (citations = []) => ({
   },
   pre: ({ children }) => <>{children}</>,
   h1: ({ children }) => (
-    <h1 className="text-2xl font-semibold mb-6 mt-8 text-white tracking-tight">{children}</h1>
+    <h1 className="text-2xl font-semibold mb-6 mt-8 text-white tracking-tight">
+      {children}
+    </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-xl font-semibold mb-4 mt-6 text-white tracking-tight">{children}</h2>
+    <h2 className="text-xl font-semibold mb-4 mt-6 text-white tracking-tight">
+      {children}
+    </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-lg font-semibold mb-3 mt-4 text-white/95">{children}</h3>
+    <h3 className="text-lg font-semibold mb-3 mt-4 text-white/95">
+      {children}
+    </h3>
   ),
   strong: ({ children }) => (
     <strong className="font-semibold text-white">{children}</strong>
@@ -123,12 +92,22 @@ export const buildMarkdownComponents = (citations = []) => ({
   ),
   table: ({ children }) => (
     <div className="my-6 overflow-x-auto rounded-lg border border-white/10">
-      <table className="w-full text-sm text-left border-collapse">{children}</table>
+      <table className="w-full text-sm text-left border-collapse">
+        {children}
+      </table>
     </div>
   ),
-  thead: ({ children }) => <thead className="bg-white/5 text-white font-medium">{children}</thead>,
-  th: ({ children }) => <th className="px-4 py-3 border-b border-white/10">{children}</th>,
-  td: ({ children }) => <td className="px-4 py-3 border-b border-white/5 text-[#d1d1d6]">{children}</td>,
+  thead: ({ children }) => (
+    <thead className="bg-white/5 text-white font-medium">{children}</thead>
+  ),
+  th: ({ children }) => (
+    <th className="px-4 py-3 border-b border-white/10">{children}</th>
+  ),
+  td: ({ children }) => (
+    <td className="px-4 py-3 border-b border-white/5 text-[#d1d1d6]">
+      {children}
+    </td>
+  ),
   hr: () => <hr className="my-8 border-white/10" />,
 });
 

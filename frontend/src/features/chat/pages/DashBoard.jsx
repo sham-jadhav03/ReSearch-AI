@@ -4,6 +4,7 @@ import "remixicon/fonts/remixicon.css";
 import { useChat } from "../hooks/useChat";
 import { useDispatch, useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from 'rehype-raw'
 import { setCurrentChatId } from "../slices/chat.slices";
 import LogoIcon from "../shared/LogoIcon";
 import Sidebar from "../components/Sidebar";
@@ -146,6 +147,7 @@ const DashBoard = () => {
                     ) : (
                       <ReactMarkDown
                         remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
                         components={buildMarkdownComponents(message.citations || [])}
                       >
                         {typeof message.content === "string"
@@ -215,6 +217,7 @@ const DashBoard = () => {
                   {streamingText ? (
                     <ReactMarkDown
                       remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
                       components={markdownComponents}
                     >
                       {streamingText}
