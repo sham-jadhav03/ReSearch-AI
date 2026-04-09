@@ -8,7 +8,8 @@ import { setCurrentChatId } from "../slices/chat.slices";
 import LogoIcon from "../shared/LogoIcon";
 import Sidebar from "../components/Sidebar";
 import { SUGGESTIONS } from "../shared/global";
-import MarkdownComponents  from "react-markdown";
+import { markdownComponents, buildMarkdownComponents } from "../components/MarkdownComponents";
+import ChatInput from "../components/ChatInput";
 
 
 const DashBoard = () => {
@@ -127,18 +128,17 @@ const DashBoard = () => {
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-2`}
               >
                 {message.role === "ai" && (
-                  <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center shrink-0 mr-3 mt-1 self-start">
-                    <LogoIcon size={13} />
+                  <div className="w-8 h-8 rounded-full bg-[#10a37f] border border-white/10 flex items-center justify-center shrink-0 mr-4 mt-0.5 self-start shadow-sm">
+                    <LogoIcon size={16} color="white" />
                   </div>
                 )}
-                <div className="flex flex-col max-w-[78%]">
+                <div className={`flex flex-col ${message.role === "user" ? "max-w-[70%]" : "max-w-full flex-1"}`}>
                   {/* Bubble */}
                   <div
-                    className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed
-                      ${
-                        message.role === "user"
-                          ? "bg-[#1e2a3d] border border-blue-500/2 text-[#c8d8f4] rounded-br-sm"
-                          : "bg-transparent text-[#d8d8e0]"
+                    className={`rounded-2xl px-1 py-1 text-[16px] leading-relaxed
+                      ${message.role === "user"
+                        ? "bg-[#2f2f2f] border border-white/5 text-[#ececf1] px-5 py-3 rounded-2xl shadow-sm"
+                        : "bg-transparent text-[#ececf1]"
                       }`}
                   >
                     {message.role === "user" ? (
@@ -146,38 +146,43 @@ const DashBoard = () => {
                     ) : (
                       <ReactMarkDown
                         remarkPlugins={[remarkGfm]}
-                        components={MarkdownComponents}
+                        components={buildMarkdownComponents(message.citations || [])}
                       >
                         {typeof message.content === "string"
                           ? message.content
                           : message.content?.content ||
-                            JSON.stringify(message.content)}
+                          JSON.stringify(message.content)}
                       </ReactMarkDown>
                     )}
                   </div>
 
-                  {/* Citation chips */}
-                  {message.role === "ai" &&
+                   {/* Citation summary section (GPT-like sources footer) */}
+                   {message.role === "ai" &&
                     message.hasCitations &&
                     message.citations?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2.5 pl-0.5">
-                        {message.citations.map((citation) => (
-                          <a
-                            key={citation.index}
-                            href={citation.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1c1c1f] border border-white/8 text-[11px] text-white/50 hover:border-blue-500/40 hover:text-blue-400 transition-all duration-150 cursor-pointer"
-                          >
-                            <span className="text-blue-400 font-medium font-mono text-[10px]">
-                              [{citation.index}]
-                            </span>
-                            <span className="truncate max-w-32.5">
-                              {citation.title}
-                            </span>
-                            <i className="ri-external-link-line text-white/25 text-[10px]" />
-                          </a>
-                        ))}
+                      <div className="mt-8 pt-4 border-t border-white/5">
+                        <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-white/40 uppercase tracking-widest">
+                           <i className="ri-quote-line" />
+                           Sources
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {message.citations.map((citation) => (
+                            <a
+                              key={citation.index}
+                              href={citation.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer"
+                            >
+                              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[9px] font-bold text-white/50 group-hover:text-white transition-colors">
+                                {citation.index}
+                              </span>
+                              <span className="text-[12px] text-white/50 group-hover:text-white/80 transition-colors truncate max-w-[180px]">
+                                {citation.title}
+                              </span>
+                            </a>
+                          ))}
+                        </div>
                       </div>
                     )}
                 </div>
@@ -206,11 +211,11 @@ const DashBoard = () => {
                 <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center shrink-0 mr-3 mt-1 self-start">
                   <LogoIcon size={13} />
                 </div>
-                <div className="max-w-[78%] text-[14px] leading-relaxed text-[#d8d8e0]">
+                <div className="max-w-[85%] text-[15px] leading-relaxed text-[#d8d8e0]">
                   {streamingText ? (
                     <ReactMarkDown
                       remarkPlugins={[remarkGfm]}
-                      components={MarkdownComponents}
+                      components={markdownComponents}
                     >
                       {streamingText}
                     </ReactMarkDown>
@@ -230,56 +235,12 @@ const DashBoard = () => {
 
         {/* Input Area */}
         <div className="shrink-0 px-4 pb-5 pt-3 bg-[#0f0f10] border-t border-white/5">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex items-end gap-2.5 bg-[#1a1a1d] border border-white/8 rounded-2xl px-4 py-3 transition-all duration-200 focus-within:border-blue-500/50 focus-within:shadow-[0_0_0_3px_rgba(79,142,247,0.1)]">
-              {/* Attach button->file send */}
-              <button
-                type="button"
-                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/8 text-white/30 hover:text-white/60 hover:border-white/15 hover:bg-white/5 transition-all duration-150 shrink-0 self-end mb-0.5 cursor-pointer"
-              >
-                <i className="ri-attachment-2 text-sm" />
-              </button>
-
-              {/* Textarea */}
-              <textarea
-                ref={textAreaRef}
-                value={chatInput}
-                onChange={(e) => {
-                  setChatInput(e.target.value);
-                  const ta = textAreaRef.current;
-                  if (ta) {
-                    ta.style.height = "auto";
-                    ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e?.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-                placeholder="Ask anything..."
-                rows={1}
-                className="flex-1 bg-transparent text-[14px] text-white outline-none resize-none leading-relaxed placeholder-white/25 max-h-30 self-center py-0.5"
-              />
-
-              {/* Send button */}
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!chatInput.trim() || isLoading}
-                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 self-end transition-all duration-200 cursor-pointer
-                  bg-blue-500 hover:bg-blue-400 hover:scale-105
-                  disabled:bg-white/6 disabled:cursor-not-allowed disabled:scale-100"
-              >
-                <i className="ri-arrow-up-line text-sm text-white" />
-              </button>
-            </div>
-
-            <p className="text-center text-[11px] text-white/20 mt-1 tracking-[0.2px]">
-              ResearchAI searches the web in real-time · Sources cited inline
-            </p>
-          </div>
+          <ChatInput
+            chatInput={chatInput}
+            setChatInput={setChatInput}
+            handleSubmit={handleSubmit}
+            isLoading={isLoading}
+            textAreaRef={textAreaRef} />
         </div>
       </section>
 
