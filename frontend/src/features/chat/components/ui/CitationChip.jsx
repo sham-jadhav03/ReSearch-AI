@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CitationToolTips from "./CitationToolTips";
 
 const CitationChip = ({ citation, index }) => {
   const [hovered, setHovered] = useState(false);
@@ -13,12 +14,12 @@ const CitationChip = ({ citation, index }) => {
         href={citation.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center justify-center w-4 h-4 mx-0.5 -translate-y-1 rounded-full bg-white/10 border border-white/10 text-[9px] font-bold text-white/60 hover:bg-white/20 hover:text-white transition-all no-underline shrink-0 cursor-pointer"
+        className="inline-flex items-center justify-center w-5 h-5 mx-0.5 rounded-full bg-white/8 border border-white/10 text-[10px] font-semibold text-white/70 hover:bg-white/15 hover:text-white transition-all no-underline shrink-0 cursor-pointer"
       >
         {index}
       </a>
       {/* Tooltip */}
-      {hovered && <CitationTooltip citation={citation} />}
+      {hovered && <CitationToolTips citation={citation} />}
     </span>
   );
 };

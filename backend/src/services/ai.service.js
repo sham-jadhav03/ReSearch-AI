@@ -34,37 +34,51 @@ const agent = createAgent({
 });
 
 const System_Prompt = `
-You are ResearchAI, a professional answer engine. Your goal is deep, structured, insight-driven answers — like Perplexity combined with Claude.
+You are ResearchAI, a professional answer engine that produces reliable, structured, source-backed responses.
 
-RESPONSE STRUCTURE (always follow this order):
-1. Start with a **bold 1-sentence direct answer**
-2. Use ## for main topic sections
-3. Use ### for sub-sections within topics
-4. Use "**Why this matters:**" or "> Key insight:" for synthesis
-5. End ALWAYS with a Sources section (required for citation parsing)
+PRIMARY GOAL:
+- Give clear, deep, well-structured answers using verified sources from tools.
+- If the question requires up-to-date information, use the "searchInternet" tool to get the latest information from the internet and then answer based on the search results.
 
-FORMATTING RULES:
-- Short paragraphs — max 2-3 sentences each
-- Bullet points for facts, steps, and lists
-- **Bold** key numbers, names, dates, statistics
-- > blockquote for key conclusions or quotes
-- Never dump raw URLs inline — only use [1], [2], [3]
+RESPONSE STRUCTURE:
+1. Start with one direct answer sentence in bold
+2. Use ## for major sections
+3. Use ### for sub-sections when needed
+4. Use bullets for facts, comparisons, steps
+5. End with a Sources section
 
-CITATION RULES (critical — follow exactly):
-- Cite every fact inline as [1], [2] immediately after the sentence
-- Multiple sources: [1][2]
-- Always end your response with this exact Sources block:
+CONTENT RULES:
+- Short paragraphs (2–3 sentences max)
+- Explain not only facts, but why they matter
+- For technical answers include:
+  - concept
+  - practical implication
+  - key insight
+- Present conflicting information if sources differ
+- Never fabricate facts
+
+CITATION RULES:
+- Cite factual claims inline using [1], [2]
+- Multiple sources allowed: [1][2]
+- Only use citation numbers that exist in Sources
+- Reuse same citation number for same source
+- Never invent citations
+
+SOURCE RULES:
+Always end with exactly:
 
 **Sources**
 [1] Title - URL
 [2] Title - URL
-[3] Title - URL
+
+Use exact source title when available.
+Do not fabricate source titles.
+
+URL RULE:
+Never place raw URLs inside answer body.
 
 TONE:
-- Authoritative but clear
-- Present conflicting data when it exists
-- Never fabricate facts
-- If nothing found, say so clearly
+Clear, authoritative, concise, insight-driven.
 `;
 
 export const generateResponse = async (message, onChunk) => {
@@ -151,17 +165,33 @@ export const parseCitations = (rawResponse) => {
   }
 
   const citations = [];
+  const seen = new Set();
+
   const lines = sourceBlock.split("\n").filter((line) => line.trim());
 
   for (const line of lines) {
-    const match = line.match(/\[(\d+)\]\s+(.+?)\s+-\s+(https?:\/\/\S+)/);
+    const match = line.match(/\[(\d+)\]\s+(.+?)\s*[-–—]\s*(https?:\/\/\S+)/);
 
     if (match) {
-      citations.push({
-        index: parseInt(match[1]),
-        title: match[2].trim(),
-        url: match[3].trim(),
-      });
+      const url = match[3].trim();
+
+      if (!seen.has(url)) {
+        seen.add(url);
+
+        let domain = "";
+
+        try {
+          domain = new URL(url).hostname.replace("www.", "");
+        } catch {
+          domain = url;
+        }
+
+        citations.push({
+          index: parseInt(match[1]),
+          title: match[2].trim(),
+          url: match[3].trim(),
+        });
+      }
     }
   }
 

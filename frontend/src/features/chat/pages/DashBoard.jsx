@@ -133,7 +133,7 @@ const DashBoard = () => {
                     <LogoIcon size={16} color="white" />
                   </div>
                 )}
-                <div className={`flex flex-col ${message.role === "user" ? "max-w-[70%]" : "max-w-full flex-1"}`}>
+                <div className={`flex flex-col ${message.role === "user" ? "max-w-[70%]" : "max-w-[85%]"}`}>
                   {/* Bubble */}
                   <div
                     className={`rounded-2xl px-1 py-1 text-[16px] leading-relaxed

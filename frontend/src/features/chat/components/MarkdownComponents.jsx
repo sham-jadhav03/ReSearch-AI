@@ -2,10 +2,11 @@ import CodeBlock from "../components/ui/CodeBlock";
 import CitationChip from "./ui/CitationChip";
 
 export const renderWithCitations = (children, citations) => {
-  if (!citations?.length || typeof children !== "string") return children;
+  const text = Array.isArray(children) ? children.join("") : children;
+  if (!citations?.length || typeof text !== "string") return children;
 
-  const parts = children.split(/(\[\d+\])/g);
-
+  const parts = text.split(/(\[\d+\])/g);
+  
   return parts.map((part, i) => {
     const match = part.match(/\[(\d+)\]/);
     if (match) {

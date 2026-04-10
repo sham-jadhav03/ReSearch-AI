@@ -1,20 +1,15 @@
 import React from "react";
 
 const CitationToolTips = ({ citation }) => {
-  let domain = citation.url;
-  try {
-    domain = new URL(citation.url).hostname.replace("www.", "");
-  } catch (_) {
-    console.log("blank url _", _);
-  }
+  const domain = citation.domain || citation.url;
 
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 
   return (
     <>
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 pointer-events-none">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 pointer-events-auto">
         {/* Arrow */}
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#1e1e22] border-r border-b border-white/10 rotate-45" />
+        <div className="absolute bottom-full left-1/2 translate-x adjustments near edge -translate-x-1/2 w-3 h-3 bg-[#1e1e22] border-r border-b border-white/10 rotate-45" />
         {/* Card */}
         <div className="bg-[#1e1e22] border border-white/10 rounded-xl p-3.5 shadow-2xl">
           {/* Domain + favicon */}
@@ -44,4 +39,3 @@ const CitationToolTips = ({ citation }) => {
 };
 
 export default CitationToolTips;
- 

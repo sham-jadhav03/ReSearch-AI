@@ -12,10 +12,17 @@ export const internetSearch = async ({ query }) => {
   const updateResult = results.results.map((item) => ({
     title: item.title,
     url: item.url,
-    content: item.content,
+    content: item.content?.slice(0, 500),
   }));
 
   return updateResult
-    .map((r, i) => `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content}`)
+    .map((r, i) =>
+      `
+       Source ${i + 1}
+       Title: ${r.title}
+       URL: ${r.url}
+       Summary: ${r.content}
+      `.trim(),
+    )
     .join("\n\n");
 };

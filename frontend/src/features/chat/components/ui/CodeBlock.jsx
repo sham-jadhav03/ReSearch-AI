@@ -29,7 +29,7 @@ const CodeBlock = ({ children, className }) => {
       </div>
       <div className="p-4 overflow-x-auto">
         <code
-          className={`${className} block text-[#e0e0e0] font-mono leading-relaxed`}
+          className={`${className} block whitespace-pre-wrap text-[#e0e0e0] font-mono leading-relaxed`}
         >
           {children}
         </code>
