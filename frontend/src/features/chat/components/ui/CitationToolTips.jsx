@@ -4,7 +4,9 @@ const CitationToolTips = ({ citation }) => {
   let domain = citation.url;
   try {
     domain = new URL(citation.url).hostname.replace("www.", "");
-  } catch (_) {}
+  } catch (_) {
+    console.log("blank url _", _);
+  }
 
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 
@@ -41,4 +43,5 @@ const CitationToolTips = ({ citation }) => {
   );
 };
 
-export default CitationToolTips
+export default CitationToolTips;
+ 

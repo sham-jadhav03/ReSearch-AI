@@ -23,4 +23,4 @@ const CitationChip = ({ citation, index }) => {
   );
 };
 
-export default CitationChip
+export default CitationChip;

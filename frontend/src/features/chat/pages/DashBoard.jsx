@@ -179,7 +179,7 @@ const DashBoard = () => {
                               <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[9px] font-bold text-white/50 group-hover:text-white transition-colors">
                                 {citation.index}
                               </span>
-                              <span className="text-[12px] text-white/50 group-hover:text-white/80 transition-colors truncate max-w-[180px]">
+                              <span className="text-[12px] text-white/50 group-hover:text-white/80 transition-colors truncate max-w-45">
                                 {citation.title}
                               </span>
                             </a>
