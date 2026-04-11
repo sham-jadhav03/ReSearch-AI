@@ -1,4 +1,3 @@
-import React from "react";
 
 const CitationToolTips = ({ citation }) => {
   const domain = citation.domain || citation.url;
@@ -9,7 +8,7 @@ const CitationToolTips = ({ citation }) => {
     <>
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 pointer-events-auto">
         {/* Arrow */}
-        <div className="absolute bottom-full left-1/2 translate-x adjustments near edge -translate-x-1/2 w-3 h-3 bg-[#1e1e22] border-r border-b border-white/10 rotate-45" />
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#1e1e22] border-r border-b border-white/10 rotate-45" />
         {/* Card */}
         <div className="bg-[#1e1e22] border border-white/10 rounded-xl p-3.5 shadow-2xl">
           {/* Domain + favicon */}

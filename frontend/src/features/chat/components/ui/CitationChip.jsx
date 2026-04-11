@@ -9,6 +9,8 @@ const CitationChip = ({ citation, index }) => {
       className="relative inline-flex"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
     >
       <a
         href={citation.url}

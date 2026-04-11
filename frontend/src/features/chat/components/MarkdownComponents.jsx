@@ -16,11 +16,11 @@ export const renderWithCitations = (children, citations) => {
       );
 
       if (citation) {
-        return <CitationChip key={i} citation={citation} index={match[1]} />;
+        return <CitationChip key={i} citation={citation} index={parseInt(match[1])} />;
       }
     }
 
-    return part;
+    return <span key={i}>{part}</span>;
   });
 };
 
@@ -60,21 +60,21 @@ export const buildMarkdownComponents = (citations = []) => ({
   pre: ({ children }) => <>{children}</>,
   h1: ({ children }) => (
     <h1 className="text-2xl font-semibold mb-6 mt-8 text-white tracking-tight">
-      {children}
+      {(children)}
     </h1>
   ),
   h2: ({ children }) => (
     <h2 className="text-xl font-semibold mb-4 mt-6 text-white tracking-tight">
-      {children}
+      {renderWithCitations(children, citations)}
     </h2>
   ),
   h3: ({ children }) => (
     <h3 className="text-lg font-semibold mb-3 mt-4 text-white/95">
-      {children}
+      {renderWithCitations(children, citations)}
     </h3>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-white">{children}</strong>
+    <strong className="font-semibold text-white">{renderWithCitations(children, citations)}</strong>
   ),
   blockquote: ({ children }) => (
     <blockquote className="border-l-4 border-white/20 pl-4 my-6 italic text-[#d1d1d6] py-1 bg-white/3 rounded-r-lg">

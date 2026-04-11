@@ -29,8 +29,8 @@ const ChatInput = (props) => {
                             }
                         }}
                         onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e?.preventDefault();
+                            if (e.key === "Enter" && !e.shiftKey  && !isLoading) {
+                                e.preventDefault();
                                 handleSubmit(e);
                             }
                         }}

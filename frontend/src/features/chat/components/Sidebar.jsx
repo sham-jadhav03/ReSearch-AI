@@ -58,7 +58,7 @@ const Sidebar = (props) => {
         </div>
 
         {/* user profile */}
-        <div className="bottom-1">
+        <div className="mt-auto">
           <button
             onClick={() => {
               navigate("/profile");

@@ -24,9 +24,9 @@ export const useChat = () => {
   const user = useSelector((state) => state.auth.user);
   const socketRef = useRef(null);
 
-  const [streamingText, setStreamingText] = useState("")
-  const [isStreaming, setIsStreaming] = useState(false)
-  const streamingBufferRef = useRef("")
+  const [streamingText, setStreamingText] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const streamingBufferRef = useRef("");
 
   useEffect(() => {
     if (!user?._id) return;
@@ -34,32 +34,45 @@ export const useChat = () => {
     const socket = intializeSocketConnect(user._id);
     socketRef.current = socket;
 
+    let frame = null;
+
     socket.on("ai:start", () => {
-      streamingBufferRef.current = ""
+      streamingBufferRef.current = "";
       setStreamingText("");
-      setIsStreaming(true)
+      setIsStreaming(true);
     });
 
     socket.on("ai:token", ({ token }) => {
-      streamingBufferRef.current += token
-      setStreamingText(streamingBufferRef.current)
+      streamingBufferRef.current += token;
+
+      if (!frame) {
+        frame = requestAnimationFrame(() => {
+          setStreamingText(streamingBufferRef.current);
+          frame = null;
+        });
+      }
     });
 
-    socket.on("ai:done", ({chatId, aiMessage, citations, hasCitations})=>{
-      dispatch(addNewMessage({
-        chatId,
-        content: aiMessage.content,
-        role: aiMessage.role,
-        citations: citations || [],
-        hasCitations: hasCitations || false,
-      }))
-      setStreamingText("")
-      setIsStreaming(false)
-      streamingBufferRef.current="";
+    socket.on("ai:done", ({ chatId, aiMessage, citations, hasCitations }) => {
+      dispatch(
+        addNewMessage({
+          chatId,
+          content: aiMessage.content || streamingBufferRef.current,
+          role: aiMessage.role,
+          citations: citations || [],
+          hasCitations: hasCitations || false,
+        }),
+      );
+      setStreamingText("");
+      setIsStreaming(false);
+      streamingBufferRef.current = "";
       dispatch(setLoading(false));
-    })
+    });
 
     return () => {
+      socket.off("ai:start");
+      socket.off("ai:token");
+      socket.off("ai:done");
       socket.disconnect();
     };
   }, [user?._id]);
@@ -86,15 +99,15 @@ export const useChat = () => {
           role: "user",
         }),
       );
-      
+
       dispatch(setCurrentChatId(resolvedChatId));
     } catch (error) {
-      setIsStreaming(false)
-      dispatch(setLoading(false))
+      setIsStreaming(false);
+      dispatch(setLoading(false));
       dispatch(
         setError(error.response?.data.message || "Unable to send message."),
       );
-    } 
+    }
   }
 
   async function handleGetChats() {
@@ -116,8 +129,9 @@ export const useChat = () => {
         ),
       );
     } catch (error) {
+      dispatch(setError(null));
       dispatch(
-        setError(error.response?.data.message || "Unable to get message"),
+        setError(error.response?.data?.message || "Failed to fetch user data"),
       );
     } finally {
       dispatch(setLoading(false));
@@ -125,23 +139,29 @@ export const useChat = () => {
   }
 
   async function handleOpenChat(chatId) {
-    if (!chats[chatId]?.messages?.length) {
-      const data = await getMessages({ chatId });
-      const { messages } = data;
+    try {
+      if (!chats[chatId]?.messages?.length) {
+        const data = await getMessages({ chatId });
+        const { messages } = data;
 
-      const formattedMessages = messages.map((msg) => ({
-        content: msg.content,
-        role: msg.role,
-      }));
+        const formattedMessages = messages.map((msg) => ({
+          content: msg.content,
+          role: msg.role,
+        }));
 
+        dispatch(
+          addMessages({
+            chatId,
+            messages: formattedMessages,
+          }),
+        );
+      }
+      dispatch(setCurrentChatId(chatId));
+    } catch (error) {
       dispatch(
-        addMessages({
-          chatId,
-          messages: formattedMessages,
-        }),
+        setError(error.response?.data?.message || "Failed to load message"),
       );
     }
-    dispatch(setCurrentChatId(chatId));
   }
 
   async function handleDeleteChat(chatId) {
@@ -156,7 +176,7 @@ export const useChat = () => {
         setError(error.response?.data.message || "Unable to delete chat."),
       );
     } finally {
-      dispatch(setLoading(false))
+      dispatch(setLoading(false));
     }
   }
 

@@ -12,5 +12,10 @@ export const intializeSocketConnect = (userId) => {
     console.log("Connected to Socket.IO server");
   });
 
+  socket.on("connect_error", (err)=> {
+    console.error("Socket connection failed:", err.message);
+    
+  })
+
   return socket;
 };

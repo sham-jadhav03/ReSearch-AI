@@ -1,22 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useDeferredValue } from "react";
 import ReactMarkDown from "react-markdown";
 import "remixicon/fonts/remixicon.css";
 import { useChat } from "../hooks/useChat";
 import { useDispatch, useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from 'rehype-raw'
+import rehypeRaw from "rehype-raw";
 import { setCurrentChatId } from "../slices/chat.slices";
 import LogoIcon from "../shared/LogoIcon";
 import Sidebar from "../components/Sidebar";
 import { SUGGESTIONS } from "../shared/global";
-import { markdownComponents, buildMarkdownComponents } from "../components/MarkdownComponents";
+import {
+  markdownComponents,
+  buildMarkdownComponents,
+} from "../components/MarkdownComponents";
 import ChatInput from "../components/ChatInput";
-
 
 const DashBoard = () => {
   const chat = useChat();
   const dispatch = useDispatch();
-  const { streamingText, isStreaming } = chat;
+  const { streamingText, isStreaming, handleGetChats } = chat;
+
+  const deferredStreamingText = useDeferredValue(streamingText);
 
   const [chatInput, setChatInput] = useState("");
   const messageEndRef = useRef(null);
@@ -34,7 +38,7 @@ const DashBoard = () => {
 
   useEffect(() => {
     // chat.intializeSocketConnect();  // handle inside useChat
-    chat.handleGetChats();
+    handleGetChats();
   }, []);
 
   const handleSubmit = (e) => {
@@ -133,13 +137,16 @@ const DashBoard = () => {
                     <LogoIcon size={16} color="white" />
                   </div>
                 )}
-                <div className={`flex flex-col ${message.role === "user" ? "max-w-[70%]" : "max-w-[85%]"}`}>
+                <div
+                  className={`flex flex-col ${message.role === "user" ? "max-w-[70%]" : "max-w-[85%]"}`}
+                >
                   {/* Bubble */}
                   <div
                     className={`rounded-2xl px-1 py-1 text-[16px] leading-relaxed
-                      ${message.role === "user"
-                        ? "bg-[#2f2f2f] border border-white/5 text-[#ececf1] px-5 py-3 rounded-2xl shadow-sm"
-                        : "bg-transparent text-[#ececf1]"
+                      ${
+                        message.role === "user"
+                          ? "bg-[#2f2f2f] border border-white/5 text-[#ececf1] px-5 py-3 rounded-2xl shadow-sm"
+                          : "bg-transparent text-[#ececf1]"
                       }`}
                   >
                     {message.role === "user" ? (
@@ -148,33 +155,33 @@ const DashBoard = () => {
                       <ReactMarkDown
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeRaw]}
-                        components={buildMarkdownComponents(message.citations || [])}
+                        components={buildMarkdownComponents(
+                          message.citations || [],
+                        )}
                       >
-                        {typeof message.content === "string"
-                          ? message.content
-                          : message.content?.content ||
-                          JSON.stringify(message.content)}
+                        {message.content}
                       </ReactMarkDown>
                     )}
                   </div>
 
-                   {/* Citation summary section (GPT-like sources footer) */}
-                   {message.role === "ai" &&
+                  {/* Citation summary section (GPT-like sources footer) */}
+                  {message.role === "ai" &&
                     message.hasCitations &&
                     message.citations?.length > 0 && (
                       <div className="mt-8 pt-4 border-t border-white/5">
                         <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-white/40 uppercase tracking-widest">
-                           <i className="ri-quote-line" />
-                           Sources
+                          <i className="ri-quote-line" />
+                          Sources
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {message.citations.map((citation) => (
+                        <div className="flex flex-wrap gap-2 animate-fadeInUp">
+                          {message.citations.map((citation, i) => (
                             <a
                               key={citation.index}
                               href={citation.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer"
+                              style={{ animationDelay: `${i * 70}ms` }}
+                              className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer animate-fadeInUp"
                             >
                               <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[9px] font-bold text-white/50 group-hover:text-white transition-colors">
                                 {citation.index}
@@ -220,7 +227,7 @@ const DashBoard = () => {
                       rehypePlugins={[rehypeRaw]}
                       components={markdownComponents}
                     >
-                      {streamingText}
+                      {deferredStreamingText}
                     </ReactMarkDown>
                   ) : null}
                   {/* Blinking cursor */}
@@ -243,7 +250,8 @@ const DashBoard = () => {
             setChatInput={setChatInput}
             handleSubmit={handleSubmit}
             isLoading={isLoading}
-            textAreaRef={textAreaRef} />
+            textAreaRef={textAreaRef}
+          />
         </div>
       </section>
 
