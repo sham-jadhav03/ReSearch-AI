@@ -7,9 +7,10 @@ const CodeBlock = ({ children, className }) => {
   const language = className?.replace("language-", "") || "plain";
   const languages = className?.replace("language-", "") || null;
 
+  const contentText = Array.isArray(children) ? children.join("") : children;
+
   const onCopy = async () => {
-    const text = Array.isArray(children) ? children.join("") : children;
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(contentText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -34,7 +35,7 @@ const CodeBlock = ({ children, className }) => {
       </div>
       <div className="p-4 overflow-x-auto">
         <SyntaxHighlighter language={language} style={oneDark} PreTag={"div"}>
-          {text}
+          {contentText}
         </SyntaxHighlighter>
       </div>
     </div>

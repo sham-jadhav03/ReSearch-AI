@@ -47,7 +47,13 @@ export const useChat = () => {
 
       if (!frame) {
         frame = requestAnimationFrame(() => {
-          setStreamingText(streamingBufferRef.current);
+          const buffer = streamingBufferRef.current;
+          const sourceMatch = buffer.match(/(?:\n\s*)?(?:\*\*Sources\*\*|##\s*Sources|Sources:)/i);
+          if (sourceMatch) {
+            setStreamingText(buffer.substring(0, sourceMatch.index));
+          } else {
+            setStreamingText(buffer);
+          }
           frame = null;
         });
       }

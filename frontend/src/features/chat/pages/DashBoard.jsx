@@ -232,8 +232,8 @@ const DashBoard = () => {
                   ) : null}
                   {/* Blinking cursor */}
                   <span
-                    className="inline-block w-0.5 h-3.75 bg-blue-400 ml-0.5 rounded-sm align-text-bottom"
-                    style={{ animation: "blink 0.9s step-end infinite" }}
+                    className="inline-block w-1.5 h-4 bg-blue-400 ml-1 rounded-[1px] align-text-bottom"
+                    style={{ animation: "blink 1s step-end infinite" }}
                   />
                 </div>
               </div>

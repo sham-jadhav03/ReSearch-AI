@@ -103,6 +103,13 @@ export const generateResponse = async (message, onChunk) => {
   let finalMessage = "";
 
   for await (const [chunk, metadata] of response) {
+    const msgType = typeof chunk?.getType === "function" ? chunk.getType() : chunk?.type;
+    const isAIMessage = msgType === "ai" || chunk?.constructor?.name?.includes("AIMessage");
+
+    if (!isAIMessage) {
+      continue;
+    }
+
     let text = "";
 
     if (typeof chunk?.content === "string" && chunk.content) {
@@ -154,14 +161,14 @@ export const parseCitations = (rawResponse) => {
   if (!rawResponse) return { answer: "", citations: [] };
 
   const sourceSplit = rawResponse.split(
-    /\*\*Sources\*\*|##\s*Sources|Sources:/i,
+    /(?:\n\s*)?(?:\*\*Sources\*\*|##\s*Sources|Sources:)/i,
   );
 
   const answer = sourceSplit[0].trim();
   const sourceBlock = sourceSplit[1]?.trim() || "";
 
   if (!sourceBlock) {
-    return { answer, citations: [] };
+    return { answer: rawResponse, citations: [] };
   }
 
   const citations = [];
@@ -170,7 +177,7 @@ export const parseCitations = (rawResponse) => {
   const lines = sourceBlock.split("\n").filter((line) => line.trim());
 
   for (const line of lines) {
-    const match = line.match(/\[(\d+)\]\s+(.+?)\s*[-–—]\s*(https?:\/\/\S+)/);
+    const match = line.match(/\[(\d+)\]\s*(.*?)\s*(?:[-–—:]\s*)?(https?:\/\/\S+)/);
 
     if (match) {
       const url = match[3].trim();

@@ -125,7 +125,7 @@ const Landing = () => {
           </div>
           <span className="footer__logo-text">ResearchAI</span>
         </div>
-        <p className="footer__copy">Built with Gemini · LangChain · Tavily</p>
+        <p className="footer__copy">Built with Gemini · Mistral · LangChain · Tavily</p>
       </footer>
     </div>
   );

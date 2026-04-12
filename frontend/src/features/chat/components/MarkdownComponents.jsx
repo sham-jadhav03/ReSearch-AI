@@ -1,27 +1,50 @@
 import CodeBlock from "../components/ui/CodeBlock";
 import CitationChip from "./ui/CitationChip";
 
-export const renderWithCitations = (children, citations) => {
-  const text = Array.isArray(children) ? children.join("") : children;
-  if (!citations?.length || typeof text !== "string") return children;
+const processStringWithCitations = (text, citations) => {
+  if (typeof text !== "string") return text;
 
   const parts = text.split(/(\[\d+\])/g);
+  if (parts.length === 1) return text;
   
   return parts.map((part, i) => {
     const match = part.match(/\[(\d+)\]/);
     if (match) {
-      const citationIndex = match[1];
-      const citation = citations.find(
-        (c) => c.index === parseInt(citationIndex),
+      const citationIndex = parseInt(match[1]);
+      const citation = citations?.find(
+        (c) => c.index === citationIndex,
       );
 
       if (citation) {
-        return <CitationChip key={i} citation={citation} index={parseInt(match[1])} />;
+        return <CitationChip key={i} citation={citation} index={citationIndex} />;
+      } else {
+        return (
+          <span key={`placeholder-${i}`} className="inline-flex items-center justify-center w-5 h-5 mx-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-semibold text-white/50 shrink-0 cursor-default">
+            {citationIndex}
+          </span>
+        );
       }
     }
 
     return <span key={i}>{part}</span>;
   });
+};
+
+export const renderWithCitations = (children, citations) => {
+  if (typeof children === "string") {
+    return processStringWithCitations(children, citations);
+  }
+
+  if (Array.isArray(children)) {
+    return children.map((child, i) => {
+      if (typeof child === "string") {
+        return <span key={i}>{processStringWithCitations(child, citations)}</span>;
+      }
+      return child;
+    });
+  }
+
+  return children;
 };
 
 export const buildMarkdownComponents = (citations = []) => ({
@@ -40,9 +63,7 @@ export const buildMarkdownComponents = (citations = []) => ({
   ),
   li: ({ children }) => (
     <li className="leading-relaxed text-[#ececf1]">
-      {typeof children === "string"
-        ? renderWithCitations(children, citations)
-        : children}
+      {renderWithCitations(children, citations)}
     </li>
   ),
   code: ({ children, className }) => {
@@ -86,7 +107,7 @@ export const buildMarkdownComponents = (citations = []) => ({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30 font-medium transition-colors"
+      className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30 font-medium transition-colors break-all"
     >
       {children}
     </a>
