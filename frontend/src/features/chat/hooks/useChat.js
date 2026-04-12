@@ -147,6 +147,8 @@ export const useChat = () => {
         const formattedMessages = messages.map((msg) => ({
           content: msg.content,
           role: msg.role,
+          citations: msg.citations || [],
+          hasCitations: msg.hasCitations || false,
         }));
 
         dispatch(

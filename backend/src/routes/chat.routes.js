@@ -10,6 +10,6 @@ router.get('/', authUser, getChats);
 
 router.get('/:chatId/messages', authUser, getMessages)
 
-router.get('/delete/:chatId', authUser, deleteChat)
+router.delete('/delete/:chatId', authUser, deleteChat)
 
 export default router;

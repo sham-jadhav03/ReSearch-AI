@@ -17,6 +17,14 @@ const messageSchema = new mongoose.Schema(
       enum: ["user", "ai"],
       required: true,
     },
+    citations: {
+      type: Array,
+      default: []
+    },
+    hasCitations: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true },
 );

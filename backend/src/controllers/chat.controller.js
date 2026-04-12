@@ -34,39 +34,44 @@ export const sendMessage = async (req, res) => {
 
   io.to(userId).emit("ai:start", {chatId: chatId || chat._id})
 
-  const result = await generateResponse(contextMessages, (token)=> {
+  res.status(201).json({
+    title,
+    chat: chat || { _id: chatId },
+    currentChatId: chatId || chat._id
+  });
+
+  generateResponse(contextMessages, (token)=> {
        io.to(userId).emit("ai:token", {
         chatId: chatId || chat._id,
         token
        })
-  });
+  }).then(async (result) => {
+    if(!result){
+      io.to(userId).emit("ai:error", {chatId: chatId || chat._id });
+      return;
+    }
 
-  if(!result){
+    const parsed = await parseCitations(result)
+    const {answer, citations, hasCitations} = await formatResponse(parsed)
+    
+    const aiMessage = await messageModel.create({
+      chat: chatId || chat._id,
+      content: answer,
+      role: "ai",
+      citations,
+      hasCitations
+    });
+
+    io.to(userId).emit("ai:done", {
+      chatId: chatId || chat._id,
+      aiMessage,
+      content: answer,
+      citations,
+      hasCitations
+    })
+  }).catch((err) => {
+    console.error(err);
     io.to(userId).emit("ai:error", {chatId: chatId || chat._id });
-    return;
-  }
-
-  const parsed = await parseCitations(result)
-  const {answer, citations, hasCitations} = await formatResponse(parsed)
-  
-  const aiMessage = await messageModel.create({
-    chat: chatId || chat._id,
-    content: answer,
-    role: "ai",
-  });
-
-  io.to(userId).emit("ai:done", {
-    chatId: chatId || chat._id,
-    aiMessage,
-    content: answer,
-    citations,
-    hasCitations
-  })
-
-  res.status(201).json({
-    title,
-    chat,
-    aiMessage,
   });
 };
 
