@@ -9,15 +9,16 @@ import {
 } from "langchain";
 import * as z from "zod";
 import { internetSearch } from "./internetSearch.service.js";
+import { config } from "../config/config.js";
 
 const geminiModel = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash-lite",
-  apiKey: process.env.GEMINI_API_KEY,
+  apiKey: config.GEMINI_API_KEY,
 });
 
 const mistralModel = new ChatMistralAI({
   model: "mistral-small-latest",
-  apiKey: process.env.MISTRAL_API_KEY,
+  apiKey: config.MISTRAL_API_KEY,
 });
 
 const searchInternetTool = tool(internetSearch, {
