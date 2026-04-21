@@ -1,5 +1,3 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { ChatMistralAI } from "@langchain/mistralai";
 import {
   HumanMessage,
   SystemMessage,
@@ -10,29 +8,8 @@ import {
 import * as z from "zod";
 import { internetSearch } from "./internetSearch.service.js";
 import { config } from "../config/config.js";
-
-const geminiModel = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash-lite",
-  apiKey: config.GEMINI_API_KEY,
-});
-
-const mistralModel = new ChatMistralAI({
-  model: "mistral-small-latest",
-  apiKey: config.MISTRAL_API_KEY,
-});
-
-const searchInternetTool = tool(internetSearch, {
-  name: "internetSearch",
-  description: "Use this tool to get the latest information from the internet.",
-  schema: z.object({
-    query: z.string().describe("The search query to look up on the internet."),
-  }),
-});
-
-const agent = createAgent({
-  model: geminiModel,
-  tools: [searchInternetTool],
-});
+import { geminiModel, mistralModel } from "../config/model.js";
+import { searchAgent } from "../agents/search.agent.js";
 
 const System_Prompt = `
 You are ResearchAI, a professional answer engine that produces reliable, structured, source-backed responses.
@@ -85,7 +62,7 @@ Clear, authoritative, concise, insight-driven.
 export const generateResponse = async (message, onChunk) => {
   console.log(message);
 
-  const response = await agent.stream(
+  const response = await searchAgent.stream(
     {
       messages: [
         new SystemMessage(System_Prompt),
@@ -104,8 +81,10 @@ export const generateResponse = async (message, onChunk) => {
   let finalMessage = "";
 
   for await (const [chunk, metadata] of response) {
-    const msgType = typeof chunk?.getType === "function" ? chunk.getType() : chunk?.type;
-    const isAIMessage = msgType === "ai" || chunk?.constructor?.name?.includes("AIMessage");
+    const msgType =
+      typeof chunk?.getType === "function" ? chunk.getType() : chunk?.type;
+    const isAIMessage =
+      msgType === "ai" || chunk?.constructor?.name?.includes("AIMessage");
 
     if (!isAIMessage) {
       continue;
@@ -148,7 +127,6 @@ export const generateChatTitle = async (message) => {
 };
 
 const MAX_MESSAGES = 10;
-
 export const buildContext = (message) => {
   /*
   Take last 10 messages only
@@ -178,7 +156,9 @@ export const parseCitations = (rawResponse) => {
   const lines = sourceBlock.split("\n").filter((line) => line.trim());
 
   for (const line of lines) {
-    const match = line.match(/\[(\d+)\]\s*(.*?)\s*(?:[-–—:]\s*)?(https?:\/\/\S+)/);
+    const match = line.match(
+      /\[(\d+)\]\s*(.*?)\s*(?:[-–—:]\s*)?(https?:\/\/\S+)/,
+    );
 
     if (match) {
       const url = match[3].trim();

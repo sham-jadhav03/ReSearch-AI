@@ -1,9 +1,5 @@
-import { tavily as Tavily } from "@tavily/core";
 import { config } from "../config/config.js";
-
-const tavily = Tavily({
-  apiKey: config.TAVILY_API_KEY,
-});
+import { tavily } from "../config/model.js";
 
 export const internetSearch = async ({ query }) => {
   const results = await tavily.search(query, {
