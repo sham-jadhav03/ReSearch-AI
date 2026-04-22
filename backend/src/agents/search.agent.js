@@ -1,7 +1,7 @@
 import { createAgent, tool } from "langchain";
-import { internetSearch } from "../services/internetSearch.service.js";
+import { internetSearch } from "../ai/internetSearch.ai.js";
 import z from "zod";
-import { geminiModel } from "../config/model.js";
+import { geminiModel } from "../ai/model.js";
 
 const searchInternetTool = tool(internetSearch, {
   name: "internetSearch",

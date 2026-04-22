@@ -1,5 +1,4 @@
-import { config } from "../config/config.js";
-import { tavily } from "../config/model.js";
+import { tavily } from "./model.js";
 
 export const internetSearch = async ({ query }) => {
   const results = await tavily.search(query, {

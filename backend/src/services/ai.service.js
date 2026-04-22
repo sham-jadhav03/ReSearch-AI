@@ -6,9 +6,9 @@ import {
   createAgent,
 } from "langchain";
 import * as z from "zod";
-import { internetSearch } from "./internetSearch.service.js";
+import { internetSearch } from "../ai/internetSearch.ai.js";
 import { config } from "../config/config.js";
-import { geminiModel, mistralModel } from "../config/model.js";
+import { geminiModel, mistralModel } from "../ai/model.js";
 import { searchAgent } from "../agents/search.agent.js";
 
 const System_Prompt = `

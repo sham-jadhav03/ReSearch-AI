@@ -57,25 +57,36 @@ Research-AI is designed to provide secure authentication alongside an interactiv
 
 ## 🤖 AI Integration & Services
 
-The `backend/src/services` directory contains the core business logic handling the AI capabilities, acting as the bridge between user input, internet search, and our database memory structure.
+The backend architecture uses a modular approach to handle AI capabilities, splitting concerns across models, tools, agents, and services.
 
-### 1. `ai.service.js` (The Brain)
-This service initializes two separate AI models using Langchain:
-- **Mistral (`mistral-small-latest`)**: Efficiently generates short, descriptive chat titles (`generateChatTitle`) by analyzing the very first message sent by a user.
-- **Gemini (`gemini-2.5-flash-lite`)**: Acts as the primary conversational agent evaluating user queries and returning context-aware answers.
-- **Langchain Agent Integration**: A dynamic agent is created where Gemini is provided a specialized tool (`internetSearch`). The internal system prompt explicitly instructs the AI to utilize this tool if a question requires up-to-date real-world information.
+### 1. Model Initialization (`backend/src/ai/model.js`)
+This module initializes our core AI and search instances using environment variables:
+- **Gemini (`gemini-2.5-flash-lite`)**: Instantiated via `@langchain/google-genai`, acting as the primary conversational brain for complex reasoning and agentic tasks.
+- **Mistral (`mistral-small-latest`)**: Instantiated via `@langchain/mistralai`, utilized efficiently for generating short, descriptive chat titles.
+- **Tavily**: Instantiated via `@tavily/core`, providing the real-time internet search capability.
 
-### 2. `internetSearch.service.js` (The Eyes)
-- Relies directly on the **Tavily API** to securely execute real-time internet web queries via `@tavily/core`.
-- Configured specifically as a Langchain Tool, the Gemini AI automatically detects when knowledge is missing, passes a refined search query, and parses the returned relevant web data (limited to the top 5 results for efficiency) directly into its response context!
+### 2. Search Tooling (`backend/src/ai/internetSearch.ai.js`)
+- **`internetSearch`**: Relies on the Tavily API to execute real-time web queries, retrieving up to 5 maximum results.
+- It formats the returned data into a readable string structure containing the Source, Title, URL, and a 500-character Summary for the AI to parse easily and cite properly.
 
-### 3. Controller Integration (`chat.controller.js`)
+### 3. Langchain Agents (`backend/src/agents/search.agent.js`)
+- **`searchInternetTool`**: Wraps the `internetSearch` function into a formal Langchain `tool` with an explicit Zod schema (requiring a `query` string).
+- **`searchAgent`**: A dynamic agent created using `createAgent`, binding the `geminiModel` with the `searchInternetTool`. This allows Gemini to autonomously decide when to query the internet for up-to-date information.
+
+### 4. Core AI Service (`backend/src/services/ai.service.js`)
+This service acts as the bridge orchestrating AI interactions:
+- **`generateResponse`**: Invokes `searchAgent.stream` with a highly detailed `System_Prompt` that enforces source-backed, structured responses with inline citations (e.g., `[1]`). It streams the AIMessage chunks directly back to the client.
+- **`generateChatTitle`**: Passes the user's first message to `mistralModel` to generate a concise 2-4 word title.
+- **Context Management**: `buildContext` truncates chat history to the last 10 messages to maintain efficiency and stay within token limits.
+- **Citation Parsing**: `parseCitations` and `formatResponse` extract URL footprints from the AI's response text and map them into structured `citations` objects for the frontend UI.
+
+### 5. Controller Integration (`chat.controller.js`)
 When a `POST` request to `/message` is fired, the AI interaction pipeline kicks in:
 - The controller checks if a `chatId` was provided. If missing (meaning it's a new conversation), it triggers `generateChatTitle` and persists a new `chatModel` entry.
 - **Persistent Conversational Memory**: The `chat.controller.js` executes a database lookup inside `messageModel` fetching *all* chronological chat history tied to the active `chatId`. 
 - This entire array of historical context is forwarded directly into `generateResponse(messages)` resolving context seamlessly.
 
-### 4. Database Memory Structure (`chat.model` & `message.model`)
+### 6. Database Memory Structure (`chat.model` & `message.model`)
 For the real-time agent to maintain long-term contextual awareness (memory over a session), the conversations are persisted relationally perfectly paired for AI consumption:
 - **`chat.model.js`**: Contains the root conversation instance referencing the `User` alongside the AI generated `title`.
 - **`message.model.js`**: Chronologically maps individual pieces of text closely to their parent `chat`. Crucially, it enforces a strict `role` enum (`"user"` or `"ai"`).
@@ -130,18 +141,18 @@ Endpoints are completely categorized, safeguarded, logging-enabled (via Morgan),
 ### **Auth Endpoints** (`/api/auth`)
 | Method | Endpoint | Description | Access | Payload/Parameters |
 | ------ | -------- | ----------- | ------ | ------------------ |
-| `POST` | `/register` | Proposes creation of new user data. | Public | Body: `{ username, email, password }` |
-| `POST` | `/login` | Authenticate identity. Resolves with Cookie. | Public | Body: `{ email, password }` |
-| `GET`  | `/get-me` | Echoes persistent logged-in profile context. | Private | `authUser` middleware |
-| `GET`  | `/verify-email` | Validate a linked email string via auth-token. | Public | Query: `?token=XYZ...` |
+| `POST` | `/register` | Validates inputs using Joi/Zod, hashes the password, creates a new user in MongoDB, and triggers a verification email. | Public | Body: `{ username, email, password }` |
+| `POST` | `/login` | Authenticates user identity, compares password hash, and resolves with an `HttpOnly` JWT Cookie for secure session management. | Public | Body: `{ email, password }` |
+| `GET`  | `/get-me` | Returns the currently logged-in user's profile details based on the valid JWT cookie. | Private | Headers: Cookie |
+| `GET`  | `/verify-email` | Validates an email token and marks the user's account as verified in the database. | Public | Query: `?token=...` |
 
 ### **Chat Endpoints** (`/api/chat`)
 | Method | Endpoint | Description | Access | Payload/Parameters |
 | ------ | -------- | ----------- | ------ | ------------------ |
-| `GET`  | `/` | Intercept continuous connected chat histories. | Private | `authUser` middleware |
-| `POST` | `/message` | Generates a new real-time message payload base. | Private | Body dependencies + auth |
-| `GET`  | `/:chatId/messages` | Stream past messages attached uniquely to the `chatId`. | Private | Params: `chatId` |
-| `GET`  | `/delete/:chatId` | Force destruct conversation history locally & DB wide. | Private | Params: `chatId` |
+| `GET`  | `/` | Retrieves a list of all chat sessions associated with the authenticated user, sorted by recency. | Private | Headers: Cookie |
+| `POST` | `/message` | Core AI interaction endpoint. Processes user messages, streams AI responses via Socket.io, saves message history, and auto-generates chat titles for new chats. | Private | Body: `{ text, chatId? }` |
+| `GET`  | `/:chatId/messages` | Fetches the complete chronological message history for a specific chat session. | Private | Params: `chatId` |
+| `DELETE`| `/delete/:chatId` | Completely removes a chat session and all its associated messages from the database. | Private | Params: `chatId` |
 
 *(Note: Every `Private` scoped endpoint is strictly walled behind an `authUser` wrapper expecting validated JSON Web Tokens configured tightly in cookies!)*
 
@@ -154,7 +165,13 @@ Research-AI/
 │
 ├── backend/                      # Server-side environment & application logic
 │   ├── src/
+│   │   ├── agents/               # Langchain Agents and Execution Logic
+│   │   │   └── search.agent.js   # Agent utilizing internet search tools
+│   │   ├── ai/                   # AI model instances and tools
+│   │   │   ├── internetSearch.ai.js # Tavily Search API implementation
+│   │   │   └── model.js          # AI Models Initialization (Gemini, Mistral)
 │   │   ├── config/               # Database and server configurations
+│   │   │   ├── config.js         # Configuration setup
 │   │   │   └── db.js             # Mongoose connection setup (MongoDB)
 │   │   ├── controllers/          # Business logic handlers for specific routes
 │   │   │   ├── auth.controller.js # Logic for user registration, login, and logout
@@ -170,7 +187,6 @@ Research-AI/
 │   │   │   └── chat.routes.js    # Routes for chat and message management
 │   │   ├── services/             # Specialized logic and external integrations
 │   │   │   ├── ai.service.js     # Core AI logic (Gemini & Mistral integration)
-│   │   │   ├── internetSearch.service.js # Tavily Search API implementation
 │   │   │   └── mail.service.js   # Email dispatch logic for verification
 │   │   ├── socket/               # Real-time communication processors
 │   │   │   └── server.socket.js  # Backend Socket.io event listeners

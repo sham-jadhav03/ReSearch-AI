@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatMistralAI } from "@langchain/mistralai";
 import { tavily as Tavily } from "@tavily/core";
-import { config } from "./config.js";
+import { config } from "../config/config.js";
 
 export const geminiModel = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash-lite",
