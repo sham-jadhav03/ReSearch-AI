@@ -1,4 +1,6 @@
-import { tavily } from "./model.js";
+import z from "zod";
+import { tool } from "langchain";
+import { tavily } from "../model.js";
 
 export const internetSearch = async ({ query }) => {
   const results = await tavily.search(query, {
@@ -22,3 +24,11 @@ export const internetSearch = async ({ query }) => {
     )
     .join("\n\n");
 };
+
+export const searchInternetTool = tool(internetSearch, {
+  name: "internetSearch",
+  description: "Use this tool to get the latest information from the internet.",
+  schema: z.object({
+    query: z.string().describe("The search query to look up on the internet."),
+  }),
+});

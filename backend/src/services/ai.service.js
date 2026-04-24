@@ -6,10 +6,10 @@ import {
   createAgent,
 } from "langchain";
 import * as z from "zod";
-import { internetSearch } from "../ai/internetSearch.ai.js";
+import { internetSearch } from "../ai/tools/internet.tool.js";
 import { config } from "../config/config.js";
 import { geminiModel, mistralModel } from "../ai/model.js";
-import { searchAgent } from "../agents/search.agent.js";
+import { searchAgent } from "../ai/agents/search.agent.js";
 
 const System_Prompt = `
 You are ResearchAI, a professional answer engine that produces reliable, structured, source-backed responses.
