@@ -1,22 +1,41 @@
 # Research-AI 🚀
 
-Welcome to **Research-AI**! This is a full-stack, real-time chat application built using the powerful **MERN** stack (MongoDB, Express.js, React, Node.js) combined with modern tooling like Vite, TailwindCSS v4, and Socket.io for a seamless real-time experience. 
+Welcome to **Research-AI**! This is a full-stack, real-time chat application built using the powerful **MERN** stack (MongoDB, Express.js, React, Node.js) combined with modern tooling like Vite, TailwindCSS v4, and Socket.io for a seamless real-time experience.
 
 ---
 
 ## 📖 Table of Contents
 - [Project Overview](#-project-overview)
+- [Architecture](#-architecture)
+- [Features](#-features)
 - [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+- [Environment Configuration](#-environment-configuration)
 - [Complete Project Workflow](#-complete-project-workflow)
 - [AI Integration & Services](#-ai-integration--services)
 - [Frontend-Backend Integration](#-frontend-backend-integration)
 - [UI Component Architecture](#-ui-component-architecture)
 - [API Endpoints](#-api-endpoints)
 - [Project Architecture & Directory Structure](#-project-architecture--directory-structure)
+
 ---
 
 ## 🌟 Project Overview
 Research-AI is designed to provide secure authentication alongside an interactive real-time chat interface. Users can seamlessly establish chat sessions, send/receive messages instantly using markdown, view their active chats, and securely manage their sessions.
+
+## 🏗 Architecture
+![Architecture](Architecture.png)
+
+---
+
+## ✨ Features
+- **Real-time Chat**: Powered by Socket.io for instantaneous messaging.
+- **AI-Powered Search**: Integrates Tavily Search for real-time internet-backed responses.
+- **Smart Summarization**: Uses Mistral to generate concise chat titles.
+- **Secure Auth**: JWT-based authentication with HttpOnly cookies.
+- **Markdown Support**: Rich text formatting with code syntax highlighting.
+- **Citations**: AI responses include clickable source links for transparency.
+- **Email Verification**: OAuth2-based email verification using Nodemailer.
 
 ---
 
@@ -34,6 +53,31 @@ Research-AI is designed to provide secure authentication alongside an interactiv
 - **MongoDB** with Mongoose (NoSQL Database)
 - **Socket.io** (WebSockets for bi-directional live messaging)
 - **JWT (JSON Web Tokens)** (Authentication via persistent HTTP-only Cookies)
+ 
+---
+
+## 🔑 Environment Configuration
+
+Create a `.env` file in the `backend/` directory and populate it with the following:
+
+```env
+# Database
+MONGO_URI=your_mongodb_uri
+
+# Authentication
+JWT_SECRET=your_jwt_secret
+
+# AI API Keys
+GEMINI_API_KEY=your_gemini_api_key
+MISTRAL_API_KEY=your_mistral_api_key
+TAVILY_API_KEY=your_tavily_api_key
+
+# Email Service (Google OAuth2)
+GOOGLE_USER=your_email@gmail.com
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REFRESH_TOKEN=your_google_refresh_token
+```
 
 ---
 
@@ -65,12 +109,12 @@ This module initializes our core AI and search instances using environment varia
 - **Mistral (`mistral-small-latest`)**: Instantiated via `@langchain/mistralai`, utilized efficiently for generating short, descriptive chat titles.
 - **Tavily**: Instantiated via `@tavily/core`, providing the real-time internet search capability.
 
-### 2. Search Tooling (`backend/src/ai/internetSearch.ai.js`)
+### 2. Search Tooling (`backend/src/ai/tools/internet.tool.js`)
 - **`internetSearch`**: Relies on the Tavily API to execute real-time web queries, retrieving up to 5 maximum results.
-- It formats the returned data into a readable string structure containing the Source, Title, URL, and a 500-character Summary for the AI to parse easily and cite properly.
-
-### 3. Langchain Agents (`backend/src/agents/search.agent.js`)
+- It formats the returned data into a readable string structure containing the Source, Title, URL, and a Summary for the AI to parse easily and cite properly.
 - **`searchInternetTool`**: Wraps the `internetSearch` function into a formal Langchain `tool` with an explicit Zod schema (requiring a `query` string).
+
+### 3. Langchain Agents (`backend/src/ai/agents/search.agent.js`)
 - **`searchAgent`**: A dynamic agent created using `createAgent`, binding the `geminiModel` with the `searchInternetTool`. This allows Gemini to autonomously decide when to query the internet for up-to-date information.
 
 ### 4. Core AI Service (`backend/src/services/ai.service.js`)
@@ -78,60 +122,60 @@ This service acts as the bridge orchestrating AI interactions:
 - **`generateResponse`**: Invokes `searchAgent.stream` with a highly detailed `System_Prompt` that enforces source-backed, structured responses with inline citations (e.g., `[1]`). It streams the AIMessage chunks directly back to the client.
 - **`generateChatTitle`**: Passes the user's first message to `mistralModel` to generate a concise 2-4 word title.
 - **Context Management**: `buildContext` truncates chat history to the last 10 messages to maintain efficiency and stay within token limits.
-- **Citation Parsing**: `parseCitations` and `formatResponse` extract URL footprints from the AI's response text and map them into structured `citations` objects for the frontend UI.
+- **Citation Parsing & Formatting**: `parseCitations` and `formatResponse` extract URL footprints from the AI's response text and map them into structured `citations` objects for the frontend UI.
 
 ### 5. Controller Integration (`chat.controller.js`)
 When a `POST` request to `/message` is fired, the AI interaction pipeline kicks in:
 - The controller checks if a `chatId` was provided. If missing (meaning it's a new conversation), it triggers `generateChatTitle` and persists a new `chatModel` entry.
-- **Persistent Conversational Memory**: The `chat.controller.js` executes a database lookup inside `messageModel` fetching *all* chronological chat history tied to the active `chatId`. 
-- This entire array of historical context is forwarded directly into `generateResponse(messages)` resolving context seamlessly.
+- **Persistent Conversational Memory**: The controller executes a database lookup inside `messageModel` fetching chronological chat history tied to the active `chatId`. 
+- This historical context is forwarded directly into `generateResponse(messages)` resolving context seamlessly.
 
 ### 6. Database Memory Structure (`chat.model` & `message.model`)
-For the real-time agent to maintain long-term contextual awareness (memory over a session), the conversations are persisted relationally perfectly paired for AI consumption:
-- **`chat.model.js`**: Contains the root conversation instance referencing the `User` alongside the AI generated `title`.
-- **`message.model.js`**: Chronologically maps individual pieces of text closely to their parent `chat`. Crucially, it enforces a strict `role` enum (`"user"` or `"ai"`).
-- Inside `ai.service.js`, the historical array from `messageModel` iterates smoothly, converting database rows exactly into Langchain's conceptual formats (`HumanMessage` & `AIMessage`). This ensures that on the 10th message of a chat sequence, the AI agent intrinsically remembers what it generated on message #1!
+For the real-time agent to maintain long-term contextual awareness, the conversations are persisted relationally:
+- **`chat.model.js`**: Contains the root conversation instance referencing the `User` alongside the AI-generated `title`.
+- **`message.model.js`**: Chronologically maps individual pieces of text to their parent `chat`. Crucially, it enforces a strict `role` enum (`"user"` or `"ai"`).
+- Inside `ai.service.js`, the historical array from `messageModel` is converted into Langchain's conceptual formats (`HumanMessage` & `AIMessage`).
 
 ---
 
 ## 🔗 Frontend-Backend Integration Workflow
-To guarantee a reactive and secure user interface, the React frontend handles server communication via meticulously structured API services, hooks, and global state reducers. Here is exactly how the `/frontend` communicates tightly with the `/backend`:
+To guarantee a reactive and secure user interface, the React frontend handles server communication via structured API services, hooks, and global state reducers.
 
-### 1. HTTP Client & Security Strategy (Axios)
-- Both `auth.api.js` and `chat.api.js` instantiate custom **Axios** instances properly configured with a `baseURL` pointing exactly to the Node.js server target (`http://localhost:4000`).
-- Critically, every axios request establishes `withCredentials: true`. This bridges the cross-origin pipeline, allowing the frontend to silently, automatically transit the secure `HttpOnly` JWT Authentication Session Cookie verified globally by the backend routers (`authUser` middleware).
+### 1. HTTP Client & Security (Axios)
+- Both `auth.api.js` and `chat.api.js` use custom **Axios** instances with a `baseURL` pointing to the server.
+- Every axios request establishes `withCredentials: true`, allowing the frontend to automatically transit the secure `HttpOnly` JWT Authentication Cookie.
 
 ### 2. Custom Hooks Orchestration (`useChat.js`)
-Instead of tangling direct API calls and state management inside generic React DOM UI components, **Research-AI** delegates logic tightly within optimized custom hooks:
-- **`handleSendMessage`**: Takes user text input alongside an active `chatId` and dispatches it straight to `chat.api.js`. Once the backend securely executes saving the text and producing the Langchain AI response, the hook synchronously fires several Redux dispatches (`addNewMessage`, `createNewChat`) appending both user/AI messages inherently scaling the DOM without needing a refresh point.
-- **`handleGetChats` & `handleOpenChat`**: Execute cleanly against the db grabs. It optimally formats the historical databases into rapid lookup memory mapping techniques. It proactively prevents unnecessary data-fetches if a conversation thread arrays are previously cached!
+- **`handleSendMessage`**: Dispatches user text to `chat.api.js`. It manages the optimistic UI updates via Redux (`addNewMessage`, `createNewChat`).
+- **Real-Time Streaming**: Listens to Socket.io events (`ai:start`, `ai:token`, `ai:done`) to handle the streaming response from the AI, updating the `streamingText` state in real-time.
+- **`handleGetChats` & `handleOpenChat`**: Fetch chat history and manage the active conversation state.
 
 ### 3. Redux Global State Centralization (`store` & `slices`)
-- Any resolved API network response triggers dispatched structures to local UI states segregated carefully within `auth` and `chat` slicing architectures. Loaded `chats` map dynamically onto Redux memory, guaranteeing functions like the Sidebar UI and Active Chat window maintain zero-latency switches while traversing ongoing conversation contexts.
+- Any resolved API network response triggers dispatched structures to local UI states within `auth` and `chat` slices. Loaded `chats` map dynamically onto Redux memory for zero-latency switches.
 
 ### 4. Real-Time Persistent Socket (`chat.socket.js`)
-- Leverages `socket.io-client` module natively via `intializeSocketConnect`. Activating immediately against the backend, it shares equivalent `withCredentials: true` rules dictating that websockets are exclusively tied directly alongside verified HTTP identity tokens making data manipulation highly secure.
+- Leverages `socket.io-client` natively via `intializeSocketConnect`. It shares `withCredentials: true` rules, ensuring websockets are tied to verified HTTP identity tokens.
 
 ---
 
 ## 🎨 UI Component Architecture & Formatting
-The `frontend/src/features/chat` module constructs an advanced, highly-reactive interface combining complex React hooks with dynamic Markdown rendering. Key architectural elements include:
+The `frontend/src/features/chat` module constructs an advanced interface combining complex React hooks with dynamic Markdown rendering.
 
 ### 1. `DashBoard.jsx` (The Core Layout)
-- Operates as the central command component syncing `useChat` custom hooks dynamically with the Redux `useSelector` store layout.
-- Provides native loading animations ("Thinking dots" using mapped bounce delays) resolving synchronously while the AI model computes in the background.
-- Captures real-time strings into native `isStreaming` mapping beautifully to a blinking tail cursor via keyframe animations.
-- Automatically handles UX scroll positions natively using `scrollIntoView()` bounded into an array tracking `useEffect`.
-- Processes deep footer map representations natively isolating AI "Sources" into interactive `href` citation bars exactly like modern LLM clients!
+- Central command component syncing `useChat` custom hooks with the Redux store.
+- Provides loading animations ("Thinking dots") and handles `isStreaming` state for real-time AI response rendering.
+- Manages scroll positions natively using `scrollIntoView()`.
+- Isolates AI "Sources" into interactive citation bars.
 
 ### 2. `MarkdownComponents.jsx` (Sophisticated Parsing)
-AI responses contain complex formatting structurally powered by `react-markdown` applying `remarkGfm` plugins to enable syntax logic. 
-- **Dynamic `<CodeBlock>`**: Intercepts generic `code` outputs embedding custom syntax headers, overflow configurations, and crucially, an interactive `onCopy` state pushing code strings securely into `navigator.clipboard`.
-- **Inline Web Citations**: An incredibly deep Regex parsing mechanism resolving the AI's internal response footnotes (e.g. `[1]`). Operations structurally bind index markers alongside payload URLs to generate dynamically clickable inline footnotes exactly matching the Tavily Search integration!
+AI responses are rendered via `react-markdown` with `remarkGfm`.
+- **Dynamic `<CodeBlock>`**: Intercepts `code` outputs, adding syntax headers and a "Copy" functionality.
+- **Inline Web Citations**: A regex-based mechanism resolves AI's internal response footnotes (e.g., `[1]`), binding them to dynamically clickable inline footnotes.
 
 ### 3. `ChatInput.jsx` (Reactive Form Controls)
-- Contains an interactive `textarea` mathematically auto-resizing up to a `120px` height cap calculating strictly via `ta.scrollHeight`.
-- Listens actively intercepting physical keyboard `Enter` actions directly binding to `handleSubmit` preventing API racing conditions by disabling inputs dynamically relying on Redux's `isLoading` prop state.
+- Interactive `textarea` with auto-resizing logic (up to `120px` height).
+- Intercepts physical keyboard `Enter` actions and prevents API racing conditions by disabling inputs during `isLoading` states.
+
 
 ---
 
@@ -165,10 +209,11 @@ Research-AI/
 │
 ├── backend/                      # Server-side environment & application logic
 │   ├── src/
-│   │   ├── agents/               # Langchain Agents and Execution Logic
-│   │   │   └── search.agent.js   # Agent utilizing internet search tools
-│   │   ├── ai/                   # AI model instances and tools
-│   │   │   ├── internetSearch.ai.js # Tavily Search API implementation
+│   │   ├── ai/                   # AI model instances, tools, and agents
+│   │   │   ├── agents/           # Langchain Agents logic
+│   │   │   │   └── search.agent.js # Agent utilizing search tools
+│   │   │   ├── tools/            # Specialized AI tools (Search, etc.)
+│   │   │   │   └── internet.tool.js # Tavily Search implementation
 │   │   │   └── model.js          # AI Models Initialization (Gemini, Mistral)
 │   │   ├── config/               # Database and server configurations
 │   │   │   ├── config.js         # Configuration setup
@@ -253,3 +298,23 @@ Research-AI/
 ```
 
 ---
+
+## 🤝 Contributing
+Contributions are welcome! Please follow these steps:
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
+
+---
+
+## 📜 License
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 📧 Contact
+Ghansham Jadhav - [ghanshamjadhav204@gmail.com](mailto:ghanshamjadhav204@gmail.com)
+
+Project Link: [https://github.com/sham-jadhav03/Research-AI](https://github.com/sham-jadhav03/Research-AI)
