@@ -20,6 +20,7 @@ const chatSlice = createSlice({
     },
     addNewMessage: (state, action) => {
       const { chatId, content, role, citations, hasCitations } = action.payload;
+    
       if (!state.chats[chatId]) return;
       state.chats[chatId].messages.push({
         content,

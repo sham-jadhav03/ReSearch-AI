@@ -14,7 +14,7 @@ import {
   setCurrentChatId,
   setError,
   setLoading,
-} from "../slices/chat.slices";
+} from "../state/chat.slices";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useRef, useState } from "react";
 
@@ -34,6 +34,9 @@ export const useChat = () => {
     const socket = intializeSocketConnect(user._id);
     socketRef.current = socket;
 
+    // Socket stays connected for any other real-time features
+    // ai:start, ai:token, ai:done are now handled via SSE
+
     return () => {
       socket.disconnect();
     };
@@ -43,35 +46,42 @@ export const useChat = () => {
     try {
       dispatch(setLoading(true));
 
-      // ── reset streaming state (was in socket "ai:start") ──
+      // Reset streaming state
       streamingBufferRef.current = "";
       setStreamingText("");
       setIsStreaming(false);
 
-      // ✅ sendMessage API call stays the same
-      // but now it returns an SSE stream instead of JSON
       const data = await sendMessage({ message, chatId });
-
       const reader = data.body.getReader();
       const decoder = new TextDecoder();
       let frame = null;
+
+      // KEY FIX: declare resolvedChatId outside the loop
+      // so both "start" and "done" blocks share the same value
+      let resolvedChatId = chatId;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const raw = decoder.decode(value, { stream: true });
+
+        // SSE can batch multiple events in one chunk — split them
         const lines = raw.split("\n\n").filter(Boolean);
 
         for (const line of lines) {
           if (!line.startsWith("data:")) continue;
 
-          const parsed = JSON.parse(line.replace("data: ", "").trim());
+          // handle both "data: {}" and "data:{}" (with or without space)
+          const jsonStr = line.replace(/^data:\s*/, "").trim();
+          const parsed = JSON.parse(jsonStr);
 
-          // ── replaces socket.on("ai:start") ──
+          //"start": event 
           if (parsed.type === "start") {
-            const resolvedChatId = chatId || parsed.chatId;
+            // Update resolvedChatId — this is what "done" will also use
+            resolvedChatId = chatId || parsed.chatId;
 
+            // New chat — add it to Redux + sidebar
             if (!chatId) {
               dispatch(
                 createNewChat({
@@ -81,6 +91,7 @@ export const useChat = () => {
               );
             }
 
+            // Add user message to Redux immediately
             dispatch(
               addNewMessage({
                 chatId: resolvedChatId,
@@ -93,14 +104,18 @@ export const useChat = () => {
             setIsStreaming(true);
           }
 
-          // ── replaces socket.on("ai:token") ──
-          // your exact requestAnimationFrame + Sources-trimming logic preserved
+          //"token": event
           if (parsed.type === "token") {
             streamingBufferRef.current += parsed.token;
 
+            // requestAnimationFrame batches rapid token updates
+            // avoids re-rendering on every single token
             if (!frame) {
               frame = requestAnimationFrame(() => {
                 const buffer = streamingBufferRef.current;
+
+                // Hide the Sources block while streaming
+                // it gets added properly on "done"
                 const sourceMatch = buffer.match(
                   /(?:\n\s*)?(?:\*\*Sources\*\*|##\s*Sources|Sources:)/i,
                 );
@@ -114,24 +129,31 @@ export const useChat = () => {
             }
           }
 
-          // ── replaces socket.on("ai:done") ──
+          // "done": event 
           if (parsed.type === "done") {
-            const resolvedChatId = chatId || parsed.chatId;
+            // resolvedChatId was set in "start" block above
+            // parsed.aiMessage.chat also has it as fallback
+            const finalChatId = resolvedChatId || parsed.aiMessage?.chat;
+
             dispatch(
               addNewMessage({
-                chatId: resolvedChatId,
-                content: parsed.aiMessage.content || streamingBufferRef.current,
-                role: parsed.aiMessage.role,
+                chatId: finalChatId,
+                content:
+                  parsed.aiMessage?.content || streamingBufferRef.current,
+                role: parsed.aiMessage?.role || "ai",
                 citations: parsed.citations || [],
                 hasCitations: parsed.hasCitations || false,
               }),
             );
+
+            // Clear streaming state
             setStreamingText("");
             setIsStreaming(false);
             streamingBufferRef.current = "";
             dispatch(setLoading(false));
           }
 
+          // "error": event
           if (parsed.type === "error") {
             setIsStreaming(false);
             dispatch(setLoading(false));
@@ -145,6 +167,7 @@ export const useChat = () => {
       dispatch(setError(error.message || "Unable to send message."));
     }
   }
+
   async function handleGetChats() {
     try {
       dispatch(setLoading(true));
@@ -204,9 +227,7 @@ export const useChat = () => {
   async function handleDeleteChat(chatId) {
     try {
       dispatch(setLoading(true));
-
       await deleteChatApi({ chatId });
-
       dispatch(deleteChat({ chatId }));
     } catch (error) {
       dispatch(

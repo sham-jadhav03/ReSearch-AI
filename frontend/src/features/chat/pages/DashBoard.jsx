@@ -5,7 +5,7 @@ import { useChat } from "../hooks/useChat";
 import { useDispatch, useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { setCurrentChatId } from "../slices/chat.slices";
+import { setCurrentChatId } from "../state/chat.slices";
 import LogoIcon from "../shared/LogoIcon";
 import Sidebar from "../components/Sidebar";
 import { SUGGESTIONS } from "../shared/global";

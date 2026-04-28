@@ -1,33 +1,36 @@
-import axios from 'axios'
+import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:4000",
-    withCredentials:true
-})
+  baseURL: "http://localhost:4000",
+  withCredentials: true,
+});
 
-export const sendMessage = async ({message, chatId}) => {
-    const response = await api.post("/api/chat/message", {
-        message, 
-        chat: chatId
-    })
+export const sendMessage = async ({ message, chatId }) => {
+  const response = await fetch("http://localhost:4000/api/chat/message", {
+    method: "POST",
+    credentials: 'include',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, chat: chatId }),
+  });
 
-    return response.data;
-}
+  console.log(response);
+  return response;
+};
 
 export const getChats = async () => {
-    const response =  await api.get(`/api/chat`)
+  const response = await api.get(`/api/chat`);
 
-    return response.data;
-}
+  return response.data;
+};
 
-export const getMessages = async ({chatId}) => {
-    const response = await api.get(`/api/chat/${chatId}/messages`)
+export const getMessages = async ({ chatId }) => {
+  const response = await api.get(`/api/chat/${chatId}/messages`);
 
-    return response.data;
-}
+  return response.data;
+};
 
-export const deleteChat = async ({chatId}) => {
-    const response = await api.delete(`/api/chat/delete/${chatId}`)
+export const deleteChat = async ({ chatId }) => {
+  const response = await api.delete(`/api/chat/delete/${chatId}`);
 
-    return response.data;
-}
+  return response.data;
+};

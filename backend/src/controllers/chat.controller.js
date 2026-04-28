@@ -43,7 +43,7 @@ export const sendMessage = async (req, res) => {
   //SSE setup
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "kee-alive");
+  res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
   res.write(
@@ -51,7 +51,7 @@ export const sendMessage = async (req, res) => {
   );
 
   generateResponse(contextMessages, (token) => {
-    res.write(`data:${JSON.stringify({ type: "token", token })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: "token", token })}\n\n`);
   })
     .then(async (result) => {
       if (!result) {
