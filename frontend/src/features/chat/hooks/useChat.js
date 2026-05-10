@@ -1,4 +1,4 @@
-import { intializeSocketConnect } from "../services/chat.socket";
+
 import {
   sendMessage,
   getChats,
@@ -22,24 +22,13 @@ export const useChat = () => {
   const dispatch = useDispatch();
   const chats = useSelector((state) => state.chat.chats);
   const user = useSelector((state) => state.auth.user);
-  const socketRef = useRef(null);
-
   const [streamingParts, setStreamingParts] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const streamingPartsRef = useRef([]);
 
   useEffect(() => {
     if (!user?._id) return;
-
-    const socket = intializeSocketConnect(user._id);
-    socketRef.current = socket;
-
-    // Socket stays connected for any other real-time features
-    // ai:start, ai:token, ai:done are now handled via SSE
-
-    return () => {
-      socket.disconnect();
-    };
+    // Real-time events are now handled via SSE
   }, [user?._id]);
 
   async function handleSendMessage({ message, chatId }) {
@@ -290,7 +279,6 @@ export const useChat = () => {
   }
 
   return {
-    intializeSocketConnect,
     handleSendMessage,
     handleGetChats,
     handleOpenChat,

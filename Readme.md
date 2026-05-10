@@ -1,6 +1,6 @@
 # Research-AI 🚀
 
-Welcome to **Research-AI**! This is a full-stack, real-time chat application built using the powerful **MERN** stack (MongoDB, Express.js, React, Node.js) combined with modern tooling like Vite, TailwindCSS v4, and Socket.io for a seamless real-time experience.
+Welcome to **Research-AI**! This is a full-stack, real-time chat application built using the powerful **MERN** stack (MongoDB, Express.js, React, Node.js) combined with modern tooling like Vite, TailwindCSS v4, and Server-Sent Events (SSE) for a seamless real-time experience.
 
 ---
 
@@ -111,8 +111,8 @@ This module initializes our core AI and search instances using environment varia
 
 ### 2. Search Tooling (`backend/src/ai/tools/internet.tool.js`)
 - **`internetSearch`**: Relies on the Tavily API to execute real-time web queries, retrieving up to 5 maximum results.
-- It formats the returned data into a readable string structure containing the Source, Title, URL, and a Summary for the AI to parse easily and cite properly.
-- **`searchInternetTool`**: Wraps the `internetSearch` function into a formal Langchain `tool` with an explicit Zod schema (requiring a `query` string).
+- It formats the returned data into a stringified JSON array containing the Source, Title, URL, and Content, which is seamlessly sent to the frontend for rich UI component rendering.
+- **`searchInternetTool`**: Wraps the `internetSearch` function into a formal Langchain `tool` with an explicit schema (requiring a `query` string).
 
 ### 3. Langchain Agents (`backend/src/ai/agents/search.agent.js`)
 - **`searchAgent`**: A dynamic agent created using `createAgent`, binding the `geminiModel` with the `searchInternetTool`. This allows Gemini to autonomously decide when to query the internet for up-to-date information.
@@ -133,7 +133,7 @@ When a `POST` request to `/message` is fired, the AI interaction pipeline kicks 
 ### 6. Database Memory Structure (`chat.model` & `message.model`)
 For the real-time agent to maintain long-term contextual awareness, the conversations are persisted relationally:
 - **`chat.model.js`**: Contains the root conversation instance referencing the `User` alongside the AI-generated `title`.
-- **`message.model.js`**: Chronologically maps individual pieces of text to their parent `chat`. Crucially, it enforces a strict `role` enum (`"user"` or `"ai"`).
+- **`message.model.js`**: Chronologically maps individual pieces of text to their parent `chat`. Crucially, it enforces a strict `role` enum (`"user"` or `"ai"`) and stores the complete `parts` array to persist rich Generative UI blocks.
 - Inside `ai.service.js`, the historical array from `messageModel` is converted into Langchain's conceptual formats (`HumanMessage` & `AIMessage`).
 
 ---
@@ -146,15 +146,15 @@ To guarantee a reactive and secure user interface, the React frontend handles se
 - Every axios request establishes `withCredentials: true`, allowing the frontend to automatically transit the secure `HttpOnly` JWT Authentication Cookie.
 
 ### 2. Custom Hooks Orchestration (`useChat.js`)
-- **`handleSendMessage`**: Dispatches user text to `chat.api.js`. It manages the optimistic UI updates via Redux (`addNewMessage`, `createNewChat`).
-- **Real-Time Streaming**: Listens to Socket.io events (`ai:start`, `ai:token`, `ai:done`) to handle the streaming response from the AI, updating the `streamingText` state in real-time.
+- **`handleSendMessage`**: Dispatches user text to `chat.api.js` using a robust SSE chunk parser capable of reassembling fragmented JSON event packets over TCP.
+- **Real-Time Streaming**: Leverages Server-Sent Events (SSE) via the Fetch API to handle the streaming response from the AI, updating the `streamingParts` array in real-time.
 - **`handleGetChats` & `handleOpenChat`**: Fetch chat history and manage the active conversation state.
 
 ### 3. Redux Global State Centralization (`store` & `slices`)
 - Any resolved API network response triggers dispatched structures to local UI states within `auth` and `chat` slices. Loaded `chats` map dynamically onto Redux memory for zero-latency switches.
 
-### 4. Real-Time Persistent Socket (`chat.socket.js`)
-- Leverages `socket.io-client` natively via `intializeSocketConnect`. It shares `withCredentials: true` rules, ensuring websockets are tied to verified HTTP identity tokens.
+### 4. Parts-Based Generative UI Streaming (`useChat.js` & `MessageRenderer.jsx`)
+- Leverages a custom SSE parser to process mixed-content streams (text and dynamic UI tools). It constructs an immutable array of `parts` that instantly renders React components (like a Sources grid) when AI agents use tools, mimicking the rich experience of ChatGPT and Perplexity.
 
 ---
 
@@ -164,7 +164,7 @@ The `frontend/src/features/chat` module constructs an advanced interface combini
 ### 1. `DashBoard.jsx` (The Core Layout)
 - Central command component syncing `useChat` custom hooks with the Redux store.
 - Provides loading animations ("Thinking dots") and handles `isStreaming` state for real-time AI response rendering.
-- Manages scroll positions natively using `scrollIntoView()`.
+- Manages scroll positions natively using a `ResizeObserver` to instantly scroll into view without jitter when rich Generative UI tool components abruptly enter the DOM.
 - Isolates AI "Sources" into interactive citation bars.
 
 ### 2. `MarkdownComponents.jsx` (Sophisticated Parsing)
@@ -194,7 +194,7 @@ Endpoints are completely categorized, safeguarded, logging-enabled (via Morgan),
 | Method | Endpoint | Description | Access | Payload/Parameters |
 | ------ | -------- | ----------- | ------ | ------------------ |
 | `GET`  | `/` | Retrieves a list of all chat sessions associated with the authenticated user, sorted by recency. | Private | Headers: Cookie |
-| `POST` | `/message` | Core AI interaction endpoint. Processes user messages, streams AI responses via Socket.io, saves message history, and auto-generates chat titles for new chats. | Private | Body: `{ text, chatId? }` |
+| `POST` | `/message` | Core AI interaction endpoint. Processes user messages, streams structured AI responses (text and tools) via Server-Sent Events (SSE), persists the `parts` array history, and auto-generates chat titles. | Private | Body: `{ message, chat? }` |
 | `GET`  | `/:chatId/messages` | Fetches the complete chronological message history for a specific chat session. | Private | Params: `chatId` |
 | `DELETE`| `/delete/:chatId` | Completely removes a chat session and all its associated messages from the database. | Private | Params: `chatId` |
 
@@ -233,13 +233,12 @@ Research-AI/
 │   │   ├── services/             # Specialized logic and external integrations
 │   │   │   ├── ai.service.js     # Core AI logic (Gemini & Mistral integration)
 │   │   │   └── mail.service.js   # Email dispatch logic for verification
-│   │   ├── socket/               # Real-time communication processors
-│   │   │   └── server.socket.js  # Backend Socket.io event listeners
+
 │   │   ├── validators/           # Request body validation and sanitization
 │   │   │   └── auth.validator.js # Joi/Zod validators for auth inputs
 │   │   └── app.js                # Main Express application configuration
 │   ├── package.json              # Backend dependencies and execution scripts
-│   ├── server.js                 # Entry point for the server and socket mounting
+│   ├── server.js                 # Entry point for the server
 │   └── .env                      # Environment secrets (MongoDB, API Keys, JWT)
 │
 └── frontend/                     # Client-Side Application (React + Vite)
@@ -281,7 +280,7 @@ Research-AI/
     │   │       │   └── Profile.jsx   # User identity & security settings
     │   │       ├── services/
     │   │       │   ├── chat.api.js   # Axios endpoints for Chat/History API
-    │   │       │   └── chat.socket.js # Client-side Socket.io initialization
+
     │   │       ├── shared/
     │   │       │   ├── global.js     # Shared UI constants & helper functions
     │   │       │   └── LogoIcon.jsx  # Scalable logo component

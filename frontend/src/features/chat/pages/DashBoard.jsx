@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useDeferredValue } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkDown from "react-markdown";
 import "remixicon/fonts/remixicon.css";
 import { useChat } from "../hooks/useChat";
