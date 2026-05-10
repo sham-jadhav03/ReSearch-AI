@@ -32,7 +32,21 @@ const DashBoard = () => {
   const currentChatTitle = chats[currentChatId]?.title || null;
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = () => {
+      messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    };
+
+    // Auto-scroll whenever messages change
+    scrollToBottom();
+
+    // ResizeObserver ensures we scroll down even if an image or a Tool UI component
+    // suddenly pops into the DOM causing the container height to jump.
+    const observer = new ResizeObserver(scrollToBottom);
+    if (messageEndRef.current?.parentElement) {
+      observer.observe(messageEndRef.current.parentElement);
+    }
+
+    return () => observer.disconnect();
   }, [currentMessages, streamingParts]);
 
   useEffect(() => {
@@ -150,6 +164,8 @@ const DashBoard = () => {
                   >
                     {message.role === "user" ? (
                       <p>{message.content}</p>
+                    ) : message.parts && message.parts.length > 0 ? (
+                      <MessageRenderer parts={message.parts} citations={message.citations || []} />
                     ) : (
                       <ReactMarkDown
                         remarkPlugins={[remarkGfm]}

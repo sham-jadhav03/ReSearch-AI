@@ -60,21 +60,32 @@ export const useChat = () => {
       // so both "start" and "done" blocks share the same value
       let resolvedChatId = chatId;
 
+      let buffer = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const raw = decoder.decode(value, { stream: true });
+        buffer += decoder.decode(value, { stream: true });
+        
+        // SSE chunks are separated by \n\n
+        const chunkParts = buffer.split("\n\n");
+        // The last element might be an incomplete chunk, keep it in the buffer
+        buffer = chunkParts.pop() || "";
 
-        // SSE can batch multiple events in one chunk — split them
-        const lines = raw.split("\n\n").filter(Boolean);
-
-        for (const line of lines) {
+        for (const line of chunkParts) {
           if (!line.startsWith("data:")) continue;
 
-          // handle both "data: {}" and "data:{}" (with or without space)
           const jsonStr = line.replace(/^data:\s*/, "").trim();
-          const parsed = JSON.parse(jsonStr);
+          if (!jsonStr) continue;
+
+          let parsed;
+          try {
+            parsed = JSON.parse(jsonStr);
+          } catch (err) {
+            console.error("Failed to parse SSE JSON:", jsonStr, err);
+            continue;
+          }
 
           //"start": event 
           if (parsed.type === "start") {
@@ -106,13 +117,14 @@ export const useChat = () => {
 
           // "text-delta": event
           if (parsed.type === "text-delta") {
-            const parts = streamingPartsRef.current;
-            const lastPart = parts[parts.length - 1];
+            const partsArray = streamingPartsRef.current;
+            const lastPart = partsArray[partsArray.length - 1];
 
             if (lastPart && lastPart.type === "text") {
-              lastPart.text += parsed.delta;
+              // Create a new object to avoid mutating React state directly
+              partsArray[partsArray.length - 1] = { ...lastPart, text: lastPart.text + parsed.delta };
             } else {
-              parts.push({ type: "text", text: parsed.delta });
+              partsArray.push({ type: "text", text: parsed.delta });
             }
 
             if (!frame) {
@@ -142,16 +154,19 @@ export const useChat = () => {
 
           // "tool-call-result": event
           if (parsed.type === "tool-call-result") {
-            const parts = streamingPartsRef.current;
-            const activeToolIndex = parts.findLastIndex(
+            const partsArray = streamingPartsRef.current;
+            const activeToolIndex = partsArray.findLastIndex(
               (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName && p.state === "streaming"
             );
 
             if (activeToolIndex !== -1) {
-              parts[activeToolIndex].state = "done";
-              parts[activeToolIndex].output = parsed.result;
+              partsArray[activeToolIndex] = {
+                ...partsArray[activeToolIndex],
+                state: "done",
+                output: parsed.result
+              };
             } else {
-               parts.push({
+               partsArray.push({
                  type: "dynamic-tool",
                  toolName: parsed.toolName,
                  state: "done",

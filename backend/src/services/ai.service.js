@@ -79,6 +79,7 @@ export const generateResponse = async (message, onChunk) => {
   );
 
   let finalMessage = "";
+  const parts = [];
 
   for await (const [chunk, metadata] of response) {
     const msgType =
@@ -92,6 +93,13 @@ export const generateResponse = async (message, onChunk) => {
       if (chunk.tool_call_chunks && chunk.tool_call_chunks.length > 0) {
         for (const tc of chunk.tool_call_chunks) {
           if (tc.name) {
+            parts.push({
+              type: "dynamic-tool",
+              toolName: tc.name,
+              state: "streaming",
+              output: null,
+            });
+
             if (onChunk) {
               onChunk({
                 type: "tool-call-start",
@@ -116,9 +124,25 @@ export const generateResponse = async (message, onChunk) => {
 
       if (text) {
         finalMessage += text;
+        
+        const lastPart = parts[parts.length - 1];
+        if (lastPart && lastPart.type === "text") {
+          lastPart.text += text;
+        } else {
+          parts.push({ type: "text", text });
+        }
+
         if (onChunk) onChunk({ type: "text-delta", delta: text });
       }
     } else if (isToolMessage) {
+      const activeToolIndex = parts.findLastIndex(
+        (p) => p.type === "dynamic-tool" && p.toolName === chunk.name
+      );
+      if (activeToolIndex !== -1) {
+        parts[activeToolIndex].state = "done";
+        parts[activeToolIndex].output = chunk.content;
+      }
+
       if (onChunk) {
         onChunk({
           type: "tool-call-result",
@@ -129,7 +153,7 @@ export const generateResponse = async (message, onChunk) => {
     }
   }
 
-  return finalMessage;
+  return { finalMessage, parts };
 };
 
 export const generateChatTitle = async (message) => {

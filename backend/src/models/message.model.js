@@ -24,6 +24,10 @@ const messageSchema = new mongoose.Schema(
     hasCitations: {
       type: Boolean,
       default: false
+    },
+    parts: {
+      type: Array,
+      default: []
     }
   },
   { timestamps: true },

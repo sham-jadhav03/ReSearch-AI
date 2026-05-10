@@ -13,16 +13,7 @@ export const internetSearch = async ({ query }) => {
     content: item.content?.slice(0, 500),
   }));
 
-  return updateResult
-    .map((r, i) =>
-      `
-       Source ${i + 1}
-       Title: ${r.title}
-       URL: ${r.url}
-       Summary: ${r.content}
-      `.trim(),
-    )
-    .join("\n\n");
+  return JSON.stringify(updateResult);
 };
 
 export const searchInternetTool = tool(internetSearch, {

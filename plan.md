@@ -80,3 +80,24 @@ We will create a central component responsible for rendering a message based on 
 
 ## ⏭ Next Steps after Review
 Once you approve this plan, we will start by executing **Phase 1** and **Phase 2** to establish the foundation, and then we'll move on to building the UI renderer. Let me know what you think!
+
+---
+
+## 🚀 Phase 5: Generative UI Implementation (Perplexity Style)
+To mimic Perplexity, tools shouldn't just be text blocks—they should be rich React components.
+**Step 5.1:** Update `MessageRenderer.jsx` to dynamically render distinct UI components based on `part.toolName`.
+**Step 5.2:** For `searchInternet`, build a `<SourcesList citations={part.output} />` component that parses the JSON output from the tool and displays a beautiful carousel or grid of sources instantly *before* the text streams.
+
+---
+
+## 💾 Phase 6: Database Persistence of Parts
+Currently, refreshing the page ruins the beautiful Generative UI because historical messages only load the `message.content` string, completely losing the `parts` array.
+**Step 6.1:** Modify the backend message model (`Message.js` or similar) to accept and store a `parts` array in MongoDB.
+**Step 6.2:** Update `chat.controller.js` to persist the final `parts` state to the database alongside `content`.
+**Step 6.3:** Update `DashBoard.jsx` to pass `message.parts` into `<MessageRenderer parts={message.parts} />` for historical messages in the `currentMessages.map` loop.
+
+---
+
+## ⚡ Phase 7: Real-Time UI Polish
+**Step 7.1:** Implement a custom auto-scroll hook that correctly anchors the chat to the bottom even when large tool components rapidly pop into the DOM.
+**Step 7.2:** (Optional) Add intermediate tool streaming (`tool-call-chunk`) in `ai.service.js` to show the user exactly what the AI is typing as arguments (e.g., "Thinking: searching for current temperature...").

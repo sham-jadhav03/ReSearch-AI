@@ -60,7 +60,9 @@ export const sendMessage = async (req, res) => {
         return;
       }
 
-      const parsed = parseCitations(result);
+      const { finalMessage, parts } = result;
+
+      const parsed = parseCitations(finalMessage);
       const { answer, citations, hasCitations } = formatResponse(parsed);
 
       const aiMessage = await messageModel.create({
@@ -69,6 +71,7 @@ export const sendMessage = async (req, res) => {
         role: "ai",
         citations,
         hasCitations,
+        parts,
       });
 
       res.write(
