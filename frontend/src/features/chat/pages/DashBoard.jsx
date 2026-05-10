@@ -14,13 +14,12 @@ import {
   buildMarkdownComponents,
 } from "../components/MarkdownComponents";
 import ChatInput from "../components/ChatInput";
+import { MessageRenderer } from "../components/MessageRenderer";
 
 const DashBoard = () => {
   const chat = useChat();
   const dispatch = useDispatch();
-  const { streamingText, isStreaming, handleGetChats } = chat;
-
-  const deferredStreamingText = useDeferredValue(streamingText);
+  const { streamingParts, isStreaming, handleGetChats } = chat;
 
   const [chatInput, setChatInput] = useState("");
   const messageEndRef = useRef(null);
@@ -34,7 +33,7 @@ const DashBoard = () => {
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [currentMessages, streamingText]);
+  }, [currentMessages, streamingParts]);
 
   useEffect(() => {
     // chat.intializeSocketConnect();  // handle inside useChat
@@ -221,14 +220,8 @@ const DashBoard = () => {
                   <LogoIcon size={13} />
                 </div>
                 <div className="max-w-[85%] text-[15px] leading-relaxed text-[#d8d8e0]">
-                  {streamingText ? (
-                    <ReactMarkDown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
-                      components={markdownComponents}
-                    >
-                      {deferredStreamingText}
-                    </ReactMarkDown>
+                  {streamingParts && streamingParts.length > 0 ? (
+                    <MessageRenderer parts={streamingParts} />
                   ) : null}
                   {/* Blinking cursor */}
                   <span

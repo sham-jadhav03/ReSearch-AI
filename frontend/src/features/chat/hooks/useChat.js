@@ -24,9 +24,9 @@ export const useChat = () => {
   const user = useSelector((state) => state.auth.user);
   const socketRef = useRef(null);
 
-  const [streamingText, setStreamingText] = useState("");
+  const [streamingParts, setStreamingParts] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const streamingBufferRef = useRef("");
+  const streamingPartsRef = useRef([]);
 
   useEffect(() => {
     if (!user?._id) return;
@@ -47,8 +47,8 @@ export const useChat = () => {
       dispatch(setLoading(true));
 
       // Reset streaming state
-      streamingBufferRef.current = "";
-      setStreamingText("");
+      streamingPartsRef.current = [];
+      setStreamingParts([]);
       setIsStreaming(false);
 
       const data = await sendMessage({ message, chatId });
@@ -104,26 +104,64 @@ export const useChat = () => {
             setIsStreaming(true);
           }
 
-          //"token": event
-          if (parsed.type === "token") {
-            streamingBufferRef.current += parsed.token;
+          // "text-delta": event
+          if (parsed.type === "text-delta") {
+            const parts = streamingPartsRef.current;
+            const lastPart = parts[parts.length - 1];
 
-            // requestAnimationFrame batches rapid token updates
-            // avoids re-rendering on every single token
+            if (lastPart && lastPart.type === "text") {
+              lastPart.text += parsed.delta;
+            } else {
+              parts.push({ type: "text", text: parsed.delta });
+            }
+
             if (!frame) {
               frame = requestAnimationFrame(() => {
-                const buffer = streamingBufferRef.current;
+                setStreamingParts([...streamingPartsRef.current]);
+                frame = null;
+              });
+            }
+          }
 
-                // Hide the Sources block while streaming
-                // it gets added properly on "done"
-                const sourceMatch = buffer.match(
-                  /(?:\n\s*)?(?:\*\*Sources\*\*|##\s*Sources|Sources:)/i,
-                );
-                if (sourceMatch) {
-                  setStreamingText(buffer.substring(0, sourceMatch.index));
-                } else {
-                  setStreamingText(buffer);
-                }
+          // "tool-call-start": event
+          if (parsed.type === "tool-call-start") {
+            streamingPartsRef.current.push({
+              type: "dynamic-tool",
+              toolName: parsed.toolName,
+              state: "streaming",
+              output: null,
+            });
+
+            if (!frame) {
+              frame = requestAnimationFrame(() => {
+                setStreamingParts([...streamingPartsRef.current]);
+                frame = null;
+              });
+            }
+          }
+
+          // "tool-call-result": event
+          if (parsed.type === "tool-call-result") {
+            const parts = streamingPartsRef.current;
+            const activeToolIndex = parts.findLastIndex(
+              (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName && p.state === "streaming"
+            );
+
+            if (activeToolIndex !== -1) {
+              parts[activeToolIndex].state = "done";
+              parts[activeToolIndex].output = parsed.result;
+            } else {
+               parts.push({
+                 type: "dynamic-tool",
+                 toolName: parsed.toolName,
+                 state: "done",
+                 output: parsed.result,
+               });
+            }
+
+            if (!frame) {
+              frame = requestAnimationFrame(() => {
+                setStreamingParts([...streamingPartsRef.current]);
                 frame = null;
               });
             }
@@ -131,25 +169,23 @@ export const useChat = () => {
 
           // "done": event 
           if (parsed.type === "done") {
-            // resolvedChatId was set in "start" block above
-            // parsed.aiMessage.chat also has it as fallback
             const finalChatId = resolvedChatId || parsed.aiMessage?.chat;
 
             dispatch(
               addNewMessage({
                 chatId: finalChatId,
-                content:
-                  parsed.aiMessage?.content || streamingBufferRef.current,
+                content: parsed.aiMessage?.content || "",
                 role: parsed.aiMessage?.role || "ai",
                 citations: parsed.citations || [],
                 hasCitations: parsed.hasCitations || false,
+                parts: [...streamingPartsRef.current],
               }),
             );
 
             // Clear streaming state
-            setStreamingText("");
+            setStreamingParts([]);
             setIsStreaming(false);
-            streamingBufferRef.current = "";
+            streamingPartsRef.current = [];
             dispatch(setLoading(false));
           }
 
@@ -245,6 +281,6 @@ export const useChat = () => {
     handleOpenChat,
     handleDeleteChat,
     isStreaming,
-    streamingText,
+    streamingParts,
   };
 };

@@ -85,25 +85,47 @@ export const generateResponse = async (message, onChunk) => {
       typeof chunk?.getType === "function" ? chunk.getType() : chunk?.type;
     const isAIMessage =
       msgType === "ai" || chunk?.constructor?.name?.includes("AIMessage");
+    const isToolMessage =
+      msgType === "tool" || chunk?.constructor?.name?.includes("ToolMessage");
 
-    if (!isAIMessage) {
-      continue;
-    }
+    if (isAIMessage) {
+      if (chunk.tool_call_chunks && chunk.tool_call_chunks.length > 0) {
+        for (const tc of chunk.tool_call_chunks) {
+          if (tc.name) {
+            if (onChunk) {
+              onChunk({
+                type: "tool-call-start",
+                toolName: tc.name,
+                toolCallId: tc.id || tc.index,
+              });
+            }
+          }
+        }
+      }
 
-    let text = "";
+      let text = "";
 
-    if (typeof chunk?.content === "string" && chunk.content) {
-      text = chunk.content;
-    } else if (Array.isArray(chunk?.content)) {
-      text = chunk.content
-        .filter((c) => c.type === "text")
-        .map((c) => c.text)
-        .join("");
-    }
+      if (typeof chunk?.content === "string" && chunk.content) {
+        text = chunk.content;
+      } else if (Array.isArray(chunk?.content)) {
+        text = chunk.content
+          .filter((c) => c.type === "text")
+          .map((c) => c.text)
+          .join("");
+      }
 
-    if (text) {
-      finalMessage += text;
-      if (onChunk) onChunk(text);
+      if (text) {
+        finalMessage += text;
+        if (onChunk) onChunk({ type: "text-delta", delta: text });
+      }
+    } else if (isToolMessage) {
+      if (onChunk) {
+        onChunk({
+          type: "tool-call-result",
+          toolName: chunk.name,
+          result: chunk.content,
+        });
+      }
     }
   }
 

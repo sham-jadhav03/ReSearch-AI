@@ -50,8 +50,8 @@ export const sendMessage = async (req, res) => {
     `data: ${JSON.stringify({ type: "start", chatId: chatId || chat._id, title })}\n\n`,
   );
 
-  generateResponse(contextMessages, (token) => {
-    res.write(`data: ${JSON.stringify({ type: "token", token })}\n\n`);
+  generateResponse(contextMessages, (event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
   })
     .then(async (result) => {
       if (!result) {
