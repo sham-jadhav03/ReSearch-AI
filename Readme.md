@@ -29,7 +29,7 @@ Research-AI is designed to provide secure authentication alongside an interactiv
 ---
 
 ## ✨ Features
-- **Real-time Chat**: Powered by Socket.io for instantaneous messaging.
+- **Real-time Chat**: Powered by Server-Sent Events (SSE) for instantaneous messaging.
 - **AI-Powered Search**: Integrates Tavily Search for real-time internet-backed responses.
 - **Smart Summarization**: Uses Mistral to generate concise chat titles.
 - **Secure Auth**: JWT-based authentication with HttpOnly cookies.
@@ -45,13 +45,11 @@ Research-AI is designed to provide secure authentication alongside an interactiv
 - **Redux Toolkit** (State Management & Data Fetching)
 - **Tailwind CSS v4** (Modern Styling Setup)
 - **React Router v7** (Routing & Application Flow)
-- **Socket.io-Client** (Real-time seamless connection)
 - **React Markdown** (Rich text formatting in chat responses)
 
 **Backend (Server)**
 - **Node.js** & **Express.js** (Core API Architecture)
 - **MongoDB** with Mongoose (NoSQL Database)
-- **Socket.io** (WebSockets for bi-directional live messaging)
 - **JWT (JSON Web Tokens)** (Authentication via persistent HTTP-only Cookies)
  
 ---
@@ -89,12 +87,12 @@ GOOGLE_REFRESH_TOKEN=your_google_refresh_token
 - **Session Persistence (`get-me`)**: Whenever the frontend finishes loading, it automatically fires the `get-me` endpoint. This validates the background cookie and restores the user session rapidly without the hassle of relogging.
 
 ### 2. **Real-Time Chat Workflow**
-- **Connection**: Upon successive login/verification, a persistent, live Socket.io connection pipeline sits open between the individual client context and the centralized server socket.
+- **Connection**: Upon successive login/verification, the application utilizes Server-Sent Events (SSE) to handle real-time streaming between the client and the centralized server.
 - **Fetching Chats**: The React frontend initially connects to the centralized API (`/api/chat/`) to resolve previous user conversations and populates the sidebar respectively.
 - **Messaging in Real-Time**: 
-  - First, a user structurally writes a test or markdown-heavy message.
+  - First, a user structurally writes a text or markdown-heavy message.
   - A structured API request (`POST /api/chat/message`) stores the message payload indefinitely within MongoDB.
-  - Concurrently acting as a middleman, Socket.io actively broadcasts the live message data strictly to the applicable chat session allowing for visual representation across different logged-in connections matching the conversation.
+  - Concurrently, Server-Sent Events (SSE) stream the live AI response data strictly to the applicable chat session allowing for instant visual representation.
 - **Chat Management**: Users may load historical messages of particular threads via `/:chatId/messages` and are even provided capabilities to remove outdated discussions through the `delete` workflow.
 
 ---
@@ -273,7 +271,7 @@ Research-AI/
     │   │       │   ├── Reuse.jsx     # Collection of reusable UI elements
     │   │       │   └── Sidebar.jsx   # List of active conversations/history
     │   │       ├── hooks/
-    │   │       │   └── useChat.js    # logic for AI response & Socket flow
+    │   │       │   └── useChat.js    # logic for AI response & SSE flow
     │   │       ├── pages/
     │   │       │   ├── DashBoard.jsx # The main primary chat dashboard
     │   │       │   ├── Landing.jsx   # Project Overview & Welcome page
