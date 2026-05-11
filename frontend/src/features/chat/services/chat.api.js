@@ -5,12 +5,12 @@ const api = axios.create({
   withCredentials: true,
 });
 
-export const sendMessage = async ({ message, chatId }) => {
+export const sendMessage = async ({ message, chatId, resumeFromIndex }) => {
   const response = await fetch("http://localhost:4000/api/chat/message", {
     method: "POST",
     credentials: 'include',
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, chat: chatId }),
+    body: JSON.stringify({ message, chat: chatId, resumeFromIndex }),
   });
 
   console.log(response);

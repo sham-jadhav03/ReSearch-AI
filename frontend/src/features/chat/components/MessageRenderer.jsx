@@ -4,6 +4,26 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { markdownComponents, buildMarkdownComponents } from "./MarkdownComponents";
 
+const fixIncompleteMarkdown = (text) => {
+  if (!text) return text;
+  const backticks = text.match(/```/g);
+  if (backticks && backticks.length % 2 !== 0) {
+    return text + '\n```';
+  }
+  return text;
+};
+
+const getToolQuery = (args) => {
+  if (!args) return "";
+  try {
+    const parsed = JSON.parse(args);
+    return parsed.query || parsed.input || "";
+  } catch (e) {
+    const match = args.match(/"(?:query|input)"\s*:\s*"([^"]*)"?/);
+    return match ? match[1] : "";
+  }
+};
+
 export const MessageRenderer = ({ parts, citations = [] }) => {
   const components = citations.length > 0 ? buildMarkdownComponents(citations) : markdownComponents;
 
@@ -20,20 +40,21 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
               rehypePlugins={[rehypeRaw]}
               components={components}
             >
-              {part.text}
+              {fixIncompleteMarkdown(part.text)}
             </ReactMarkDown>
           );
         }
 
         if (part.type === "dynamic-tool") {
           if (part.state === "streaming") {
+            const query = getToolQuery(part.args);
             return (
               <div
                 key={index}
                 className="flex items-center gap-2 p-3 my-2 bg-white/5 rounded-lg text-sm text-white/60 animate-pulse"
               >
-                <i className="ri-loader-4-line animate-spin"></i>
-                Using {part.toolName}...
+                <i className="ri-loader-4-line animate-spin text-blue-400"></i>
+                Thinking: {query ? `Searching for "${query}"...` : "Searching the web..."}
               </div>
             );
           } else if (part.state === "done") {

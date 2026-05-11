@@ -97,6 +97,7 @@ export const generateResponse = async (message, onChunk) => {
               type: "dynamic-tool",
               toolName: tc.name,
               state: "streaming",
+              args: "",
               output: null,
             });
 
@@ -105,6 +106,25 @@ export const generateResponse = async (message, onChunk) => {
                 type: "tool-call-start",
                 toolName: tc.name,
                 toolCallId: tc.id || tc.index,
+              });
+            }
+          }
+
+          if (tc.args) {
+            const lastPart = parts[parts.length - 1];
+            if (
+              lastPart &&
+              lastPart.type === "dynamic-tool" &&
+              lastPart.state === "streaming"
+            ) {
+              lastPart.args = (lastPart.args || "") + tc.args;
+            }
+
+            if (onChunk) {
+              onChunk({
+                type: "tool-call-delta",
+                toolName: tc.name || lastPart?.toolName,
+                args: tc.args,
               });
             }
           }

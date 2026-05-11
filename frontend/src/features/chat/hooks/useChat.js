@@ -32,179 +32,229 @@ export const useChat = () => {
   }, [user?._id]);
 
   async function handleSendMessage({ message, chatId }) {
-    try {
-      dispatch(setLoading(true));
+    let resolvedChatId = chatId;
+    let isDone = false;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
-      // Reset streaming state
-      streamingPartsRef.current = [];
-      setStreamingParts([]);
-      setIsStreaming(false);
+    dispatch(setLoading(true));
+    // Reset streaming state ONLY on first attempt
+    streamingPartsRef.current = [];
+    setStreamingParts([]);
+    setIsStreaming(false);
 
-      const data = await sendMessage({ message, chatId });
-      const reader = data.body.getReader();
-      const decoder = new TextDecoder();
-      let frame = null;
+    while (!isDone && retryCount < MAX_RETRIES) {
+      try {
+        // Calculate how much text we already have to resume correctly
+        const receivedTextLength = streamingPartsRef.current
+          .filter((p) => p.type === "text")
+          .reduce((acc, p) => acc + p.text.length, 0);
 
-      // KEY FIX: declare resolvedChatId outside the loop
-      // so both "start" and "done" blocks share the same value
-      let resolvedChatId = chatId;
+        const data = await sendMessage({
+          message,
+          chatId: resolvedChatId,
+          resumeFromIndex: receivedTextLength > 0 ? receivedTextLength : undefined,
+        });
 
-      let buffer = "";
+        const reader = data.body.getReader();
+        const decoder = new TextDecoder();
+        let frame = null;
+        let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        
-        // SSE chunks are separated by \n\n
-        const chunkParts = buffer.split("\n\n");
-        // The last element might be an incomplete chunk, keep it in the buffer
-        buffer = chunkParts.pop() || "";
+          buffer += decoder.decode(value, { stream: true });
+          const chunkParts = buffer.split("\n\n");
+          buffer = chunkParts.pop() || "";
 
-        for (const line of chunkParts) {
-          if (!line.startsWith("data:")) continue;
+          for (const line of chunkParts) {
+            if (!line.startsWith("data:")) continue;
 
-          const jsonStr = line.replace(/^data:\s*/, "").trim();
-          if (!jsonStr) continue;
+            const jsonStr = line.replace(/^data:\s*/, "").trim();
+            if (!jsonStr) continue;
 
-          let parsed;
-          try {
-            parsed = JSON.parse(jsonStr);
-          } catch (err) {
-            console.error("Failed to parse SSE JSON:", jsonStr, err);
-            continue;
-          }
+            let parsed;
+            try {
+              parsed = JSON.parse(jsonStr);
+            } catch (err) {
+              console.error("Failed to parse SSE JSON:", jsonStr, err);
+              continue;
+            }
 
-          //"start": event 
-          if (parsed.type === "start") {
-            // Update resolvedChatId — this is what "done" will also use
-            resolvedChatId = chatId || parsed.chatId;
+            // "start": event
+            if (parsed.type === "start") {
+              resolvedChatId = resolvedChatId || parsed.chatId;
 
-            // New chat — add it to Redux + sidebar
-            if (!chatId) {
+              // Only add UI state if this is the VERY first start (not a resume)
+              if (!chatId && receivedTextLength === 0) {
+                dispatch(
+                  createNewChat({
+                    chatId: resolvedChatId,
+                    title: parsed.title,
+                  }),
+                );
+                dispatch(
+                  addNewMessage({
+                    chatId: resolvedChatId,
+                    content: message,
+                    role: "user",
+                  }),
+                );
+              }
+
+              dispatch(setCurrentChatId(resolvedChatId));
+              setIsStreaming(true);
+            }
+
+            // "text-delta": event
+            if (parsed.type === "text-delta") {
+              const partsArray = streamingPartsRef.current;
+              const lastPart = partsArray[partsArray.length - 1];
+
+              if (lastPart && lastPart.type === "text") {
+                partsArray[partsArray.length - 1] = {
+                  ...lastPart,
+                  text: lastPart.text + parsed.delta,
+                };
+              } else {
+                partsArray.push({ type: "text", text: parsed.delta });
+              }
+
+              if (!frame) {
+                frame = requestAnimationFrame(() => {
+                  setStreamingParts([...streamingPartsRef.current]);
+                  frame = null;
+                });
+              }
+            }
+
+            // "tool-call-start": event
+            if (parsed.type === "tool-call-start") {
+              // Avoid duplicate tool UI if resuming
+              const exists = streamingPartsRef.current.some(
+                (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName
+              );
+
+              if (!exists) {
+                streamingPartsRef.current.push({
+                  type: "dynamic-tool",
+                  toolName: parsed.toolName,
+                  state: "streaming",
+                  args: "",
+                  output: null,
+                });
+
+                if (!frame) {
+                  frame = requestAnimationFrame(() => {
+                    setStreamingParts([...streamingPartsRef.current]);
+                    frame = null;
+                  });
+                }
+              }
+            }
+
+            // "tool-call-delta": event
+            if (parsed.type === "tool-call-delta") {
+              const partsArray = streamingPartsRef.current;
+              const lastPart = partsArray[partsArray.length - 1];
+              if (
+                lastPart &&
+                lastPart.type === "dynamic-tool" &&
+                lastPart.state === "streaming"
+              ) {
+                lastPart.args = (lastPart.args || "") + parsed.args;
+              }
+
+              if (!frame) {
+                frame = requestAnimationFrame(() => {
+                  setStreamingParts([...streamingPartsRef.current]);
+                  frame = null;
+                });
+              }
+            }
+
+            // "tool-call-result": event
+            if (parsed.type === "tool-call-result") {
+              const partsArray = streamingPartsRef.current;
+              const activeToolIndex = partsArray.findLastIndex(
+                (p) =>
+                  p.type === "dynamic-tool" &&
+                  p.toolName === parsed.toolName &&
+                  p.state === "streaming",
+              );
+
+              if (activeToolIndex !== -1) {
+                partsArray[activeToolIndex] = {
+                  ...partsArray[activeToolIndex],
+                  state: "done",
+                  output: parsed.result,
+                };
+              } else {
+                // If we missed the start or it already finished, ensure it's in the state as done
+                const alreadyDone = partsArray.some(
+                  (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName && p.state === "done"
+                );
+                if (!alreadyDone) {
+                   partsArray.push({
+                     type: "dynamic-tool",
+                     toolName: parsed.toolName,
+                     state: "done",
+                     output: parsed.result,
+                   });
+                }
+              }
+
+              if (!frame) {
+                frame = requestAnimationFrame(() => {
+                  setStreamingParts([...streamingPartsRef.current]);
+                  frame = null;
+                });
+              }
+            }
+
+            // "done": event
+            if (parsed.type === "done") {
+              isDone = true;
+              const finalChatId = resolvedChatId || parsed.aiMessage?.chat;
+
               dispatch(
-                createNewChat({
-                  chatId: resolvedChatId,
-                  title: parsed.title,
+                addNewMessage({
+                  chatId: finalChatId,
+                  content: parsed.aiMessage?.content || "",
+                  role: parsed.aiMessage?.role || "ai",
+                  citations: parsed.citations || [],
+                  hasCitations: parsed.hasCitations || false,
+                  parts: [...streamingPartsRef.current],
                 }),
               );
+
+              // Clear streaming state
+              setStreamingParts([]);
+              setIsStreaming(false);
+              streamingPartsRef.current = [];
+              dispatch(setLoading(false));
             }
 
-            // Add user message to Redux immediately
-            dispatch(
-              addNewMessage({
-                chatId: resolvedChatId,
-                content: message,
-                role: "user",
-              }),
-            );
-
-            dispatch(setCurrentChatId(resolvedChatId));
-            setIsStreaming(true);
-          }
-
-          // "text-delta": event
-          if (parsed.type === "text-delta") {
-            const partsArray = streamingPartsRef.current;
-            const lastPart = partsArray[partsArray.length - 1];
-
-            if (lastPart && lastPart.type === "text") {
-              // Create a new object to avoid mutating React state directly
-              partsArray[partsArray.length - 1] = { ...lastPart, text: lastPart.text + parsed.delta };
-            } else {
-              partsArray.push({ type: "text", text: parsed.delta });
+            // "error": event
+            if (parsed.type === "error") {
+              throw new Error("AI Stream Error");
             }
-
-            if (!frame) {
-              frame = requestAnimationFrame(() => {
-                setStreamingParts([...streamingPartsRef.current]);
-                frame = null;
-              });
-            }
-          }
-
-          // "tool-call-start": event
-          if (parsed.type === "tool-call-start") {
-            streamingPartsRef.current.push({
-              type: "dynamic-tool",
-              toolName: parsed.toolName,
-              state: "streaming",
-              output: null,
-            });
-
-            if (!frame) {
-              frame = requestAnimationFrame(() => {
-                setStreamingParts([...streamingPartsRef.current]);
-                frame = null;
-              });
-            }
-          }
-
-          // "tool-call-result": event
-          if (parsed.type === "tool-call-result") {
-            const partsArray = streamingPartsRef.current;
-            const activeToolIndex = partsArray.findLastIndex(
-              (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName && p.state === "streaming"
-            );
-
-            if (activeToolIndex !== -1) {
-              partsArray[activeToolIndex] = {
-                ...partsArray[activeToolIndex],
-                state: "done",
-                output: parsed.result
-              };
-            } else {
-               partsArray.push({
-                 type: "dynamic-tool",
-                 toolName: parsed.toolName,
-                 state: "done",
-                 output: parsed.result,
-               });
-            }
-
-            if (!frame) {
-              frame = requestAnimationFrame(() => {
-                setStreamingParts([...streamingPartsRef.current]);
-                frame = null;
-              });
-            }
-          }
-
-          // "done": event 
-          if (parsed.type === "done") {
-            const finalChatId = resolvedChatId || parsed.aiMessage?.chat;
-
-            dispatch(
-              addNewMessage({
-                chatId: finalChatId,
-                content: parsed.aiMessage?.content || "",
-                role: parsed.aiMessage?.role || "ai",
-                citations: parsed.citations || [],
-                hasCitations: parsed.hasCitations || false,
-                parts: [...streamingPartsRef.current],
-              }),
-            );
-
-            // Clear streaming state
-            setStreamingParts([]);
-            setIsStreaming(false);
-            streamingPartsRef.current = [];
-            dispatch(setLoading(false));
-          }
-
-          // "error": event
-          if (parsed.type === "error") {
-            setIsStreaming(false);
-            dispatch(setLoading(false));
-            dispatch(setError("AI failed to respond. Please try again."));
           }
         }
+      } catch (error) {
+        console.error("SSE Connection failed, retrying...", error);
+        retryCount++;
+        if (retryCount >= MAX_RETRIES) {
+          setIsStreaming(false);
+          dispatch(setLoading(false));
+          dispatch(setError("Connection lost. Please try again."));
+          break;
+        }
+        // Wait before retrying (exponential backoff)
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
       }
-    } catch (error) {
-      setIsStreaming(false);
-      dispatch(setLoading(false));
-      dispatch(setError(error.message || "Unable to send message."));
     }
   }
 

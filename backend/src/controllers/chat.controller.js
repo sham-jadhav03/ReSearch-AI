@@ -9,13 +9,14 @@ import {
 } from "../services/ai.service.js";
 
 export const sendMessage = async (req, res) => {
-  const { message, chat: chatId } = req.body;
+  const { message, chat: chatId, resumeFromIndex } = req.body;
   const userId = req.user.id.toString();
 
   let title = null,
     chat = null;
 
-  if (!chatId) {
+  // Only create chat if not provided and not resuming
+  if (!chatId && !resumeFromIndex) {
     title = await generateChatTitle(message);
     chat = await chatModel.create({
       user: req.user.id,
@@ -23,16 +24,19 @@ export const sendMessage = async (req, res) => {
     });
   }
 
-  // const currentChatId = chatId || chat._id;
+  const finalChatId = chatId || chat?._id;
 
-  await messageModel.create({
-    chat: chatId || chat._id,
-    content: message,
-    role: "user",
-  });
+  // Only create user message if not resuming
+  if (!resumeFromIndex) {
+    await messageModel.create({
+      chat: finalChatId,
+      content: message,
+      role: "user",
+    });
+  }
 
   const allMessages = await messageModel.find({
-    chat: chatId || chat._id,
+    chat: finalChatId,
   });
 
   const contextMessages = await buildContext(allMessages);
@@ -44,10 +48,32 @@ export const sendMessage = async (req, res) => {
   res.flushHeaders();
 
   res.write(
-    `data: ${JSON.stringify({ type: "start", chatId: chatId || chat._id, title })}\n\n`,
+    `data: ${JSON.stringify({ type: "start", chatId: finalChatId, title })}\n\n`,
   );
 
+  let currentTextLength = 0;
+
   generateResponse(contextMessages, (event) => {
+    if (resumeFromIndex && event.type === "text-delta") {
+      const delta = event.delta;
+      const prevLength = currentTextLength;
+      currentTextLength += delta.length;
+
+      if (currentTextLength <= resumeFromIndex) {
+        return; // Fully skip
+      }
+
+      if (prevLength < resumeFromIndex) {
+        // Partially skip
+        const skip = resumeFromIndex - prevLength;
+        const slicedDelta = delta.slice(skip);
+        res.write(
+          `data: ${JSON.stringify({ ...event, delta: slicedDelta })}\n\n`,
+        );
+        return;
+      }
+    }
+
     res.write(`data: ${JSON.stringify(event)}\n\n`);
   })
     .then(async (result) => {
@@ -62,8 +88,10 @@ export const sendMessage = async (req, res) => {
       const parsed = parseCitations(finalMessage);
       const { answer, citations, hasCitations } = formatResponse(parsed);
 
+      // Save AI message (or update if we want to avoid duplicates, 
+      // but usually the AI message is only saved at the end)
       const aiMessage = await messageModel.create({
-        chat: chatId || chat._id,
+        chat: finalChatId,
         content: answer,
         role: "ai",
         citations,
