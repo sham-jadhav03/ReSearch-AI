@@ -49,9 +49,9 @@ export const renderWithCitations = (children, citations) => {
 
 export const buildMarkdownComponents = (citations = []) => ({
   p: ({ children }) => (
-    <p className="mb-5 last:mb-0 leading-[1.7] text-[#ececf1]">
+    <div className="mb-5 last:mb-0 leading-[1.7] text-[#ececf1]">
       {renderWithCitations(children, citations)}
-    </p>
+    </div>
   ),
   ul: ({ children }) => (
     <ul className="mb-5 list-disc pl-6 space-y-2 text-[#ececf1]">{children}</ul>
