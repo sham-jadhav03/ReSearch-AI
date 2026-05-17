@@ -2,13 +2,9 @@ import {
   HumanMessage,
   SystemMessage,
   AIMessage,
-  tool,
-  createAgent,
 } from "langchain";
 import * as z from "zod";
-import { internetSearch } from "../ai/tools/internet.tool.js";
-import { config } from "../config/config.js";
-import { geminiModel, mistralModel } from "../ai/model.js";
+import { mistralModel } from "../ai/model.js";
 import { searchAgent } from "../ai/agents/search.agent.js";
 
 const System_Prompt = `
