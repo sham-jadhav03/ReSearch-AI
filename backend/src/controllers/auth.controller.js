@@ -181,3 +181,22 @@ export const verifyEmail = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc logout user
+ * @route GET /api/auth/logout
+ * @access Public
+ * @query { token }
+ */
+
+export const logout = async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    res.status(400).json({
+      message: "Token is required to logout",
+      success: false,
+      err: "Token required"
+    })
+  }
+}

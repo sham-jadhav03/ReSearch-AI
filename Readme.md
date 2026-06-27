@@ -23,9 +23,6 @@ Welcome to **Research-AI**! This is a full-stack, real-time chat application bui
 ## 🌟 Project Overview
 Research-AI is designed to provide secure authentication alongside an interactive real-time chat interface. Users can seamlessly establish chat sessions, send/receive messages instantly using markdown, view their active chats, and securely manage their sessions.
 
-## 🏗 Architecture
-![Architecture](Architecture.png)
-
 ---
 
 ## ✨ Features
