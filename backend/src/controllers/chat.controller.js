@@ -41,6 +41,12 @@ export const sendMessage = async (req, res) => {
 
   const contextMessages = await buildContext(allMessages);
 
+  // Abort controller to handle premature client disconnection
+  const abortController = new AbortController();
+  req.on("close", () => {
+    abortController.abort();
+  });
+
   //SSE setup
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -54,6 +60,8 @@ export const sendMessage = async (req, res) => {
   let currentTextLength = 0;
 
   generateResponse(contextMessages, (event) => {
+    if (abortController.signal.aborted) return;
+
     if (resumeFromIndex && event.type === "text-delta") {
       const delta = event.delta;
       const prevLength = currentTextLength;
@@ -75,8 +83,10 @@ export const sendMessage = async (req, res) => {
     }
 
     res.write(`data: ${JSON.stringify(event)}\n\n`);
-  })
+  }, { signal: abortController.signal })
     .then(async (result) => {
+      if (abortController.signal.aborted) return;
+
       if (!result) {
         res.write(`data: ${JSON.stringify({ type: "error" })}\n\n`);
         res.end();
@@ -110,6 +120,10 @@ export const sendMessage = async (req, res) => {
       res.end();
     })
     .catch((err) => {
+      if (abortController.signal.aborted || req.destroyed || res.writableEnded) {
+        console.log("SSE connection aborted/closed by client.");
+        return;
+      }
       console.error(err);
       res.write(`data: ${JSON.stringify({ type: "error" })}\n\n`);
       res.end();
@@ -138,7 +152,7 @@ export const getMessages = async (req, res) => {
   });
 
   if (!chat) {
-    res.status(404).json({
+    return res.status(404).json({
       message: "Chat not found.",
     });
   }

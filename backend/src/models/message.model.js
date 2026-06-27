@@ -33,6 +33,8 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+messageSchema.index({ chat: 1 })
+
 const messageModel = mongoose.model('Message', messageSchema);
 
 export default messageModel

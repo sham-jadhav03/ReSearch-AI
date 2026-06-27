@@ -36,13 +36,15 @@ export const register = async (req, res) => {
     process.env.JWT_SECRET,
   );
 
+  const verificationUrl = `${process.env.SERVER_URL}/api/auth/verify-email?token=${emailVerificationToken}`
+
   await sendEmail({
     to: email,
     subject: "Welcome to ResearchAI",
     html: `<h1>Welcome to ResearchAI, ${username}!</h1>
             <p>Thank you for registering at <strong>ResearchAI</strong>. We're excited to have you on board!</p>
             <p>Please verify your email address by clicking the link below:</p>
-            <a href="http://localhost:4000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
+            <a href=${verificationUrl}>Verify Email</a>
             <p>If you did not create an account, please ignore this email.</p>
             <p>Best regards,<br/>The ResearchAI Team.</p> 
             `,

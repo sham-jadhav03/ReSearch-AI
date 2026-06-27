@@ -23,7 +23,7 @@ transporter
 
 export const sendEmail = async ({ to, subject, html, text }) => {
   const mailOptions = {
-    from: process.env.GOOGLE_USER,
+    from: config.GOOGLE_USER,
     to,
     subject,
     html,

@@ -5,9 +5,10 @@ import connectDB from './src/config/db.js';
 
 connectDB();
 
+const PORT = process.env.PORT || 4000;
 const httpServer = http.createServer(app)
 
-httpServer.listen(4000, ()=> {
-    console.log('Server is running on port 4000');
+httpServer.listen(PORT, ()=> {
+    console.log(`Server is running on http://localhost:${PORT}`);
     
 })

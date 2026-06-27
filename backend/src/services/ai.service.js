@@ -55,7 +55,7 @@ TONE:
 Clear, authoritative, concise, insight-driven.
 `;
 
-export const generateResponse = async (message, onChunk) => {
+export const generateResponse = async (message, onChunk, options = {}) => {
   console.log(message);
 
   const response = await searchAgent.stream(
@@ -71,13 +71,16 @@ export const generateResponse = async (message, onChunk) => {
         }),
       ],
     },
-    { streamMode: "messages" },
+    { streamMode: "messages", signal: options.signal },
   );
 
   let finalMessage = "";
   const parts = [];
 
   for await (const [chunk, metadata] of response) {
+    if (options.signal?.aborted) {
+      break;
+    }
     const msgType =
       typeof chunk?.getType === "function" ? chunk.getType() : chunk?.type;
     const isAIMessage =
