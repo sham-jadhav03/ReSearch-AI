@@ -297,6 +297,7 @@ export const useChat = () => {
           role: msg.role,
           citations: msg.citations || [],
           hasCitations: msg.hasCitations || false,
+          parts: msg.parts || [],
         }));
 
         dispatch(

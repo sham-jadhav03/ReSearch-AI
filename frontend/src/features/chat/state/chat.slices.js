@@ -27,6 +27,7 @@ const chatSlice = createSlice({
         role,
         citations: citations || [],
         hasCitations: hasCitations || false,
+        parts: parts || [],
       });
     },
     addMessages: (state, action) => {
