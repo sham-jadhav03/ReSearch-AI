@@ -1,12 +1,14 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
 const api = axios.create({
-  baseURL: "http://localhost:4000",
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
 export const sendMessage = async ({ message, chatId, resumeFromIndex }) => {
-  const response = await fetch("http://localhost:4000/api/chat/message", {
+  const response = await fetch(`${API_BASE_URL}/api/chat/message`, {
     method: "POST",
     credentials: 'include',
     headers: { "Content-Type": "application/json" },

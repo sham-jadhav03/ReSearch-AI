@@ -1,10 +1,18 @@
 import LogoIcon from "../shared/LogoIcon";
 import { useNavigate } from "react-router";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 const Sidebar = (props) => {
   const { deleteChat, startNewChat, chats, openChat, currentChatId } = props;
 
   const navigate = useNavigate();
+  const { handleLogout } = useAuth();
+
+  const onLogout = async (e) => {
+    e.stopPropagation();
+    await handleLogout();
+    navigate("/");
+  };
 
   return (
     <>
@@ -58,15 +66,22 @@ const Sidebar = (props) => {
         </div>
 
         {/* user profile */}
-        <div className="mt-auto">
+        <div className="mt-auto border-t border-white/[0.07] flex items-center justify-between">
           <button
             onClick={() => {
               navigate("/profile");
             }}
-            className="cursor-pointer flex items-center gap-2.5 px-4 py-5 border-b border-white/[0.07] w-full hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90"
+            className="cursor-pointer flex items-center gap-2.5 px-4 py-5 w-full hover:bg-white/5 hover:text-white text-[#888892] transition-all duration-150"
           >
             <i className="ri-user-3-line text-base"></i>
-            <span className="text-white font-semibold">Profile</span>
+            <span className="font-semibold text-white">Profile</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="cursor-pointer flex items-center justify-center px-4 py-5 hover:bg-red-500/10 text-red-400 border-l border-white/[0.07] transition-all duration-150 h-full self-stretch"
+            title="Log Out"
+          >
+            <i className="ri-logout-box-r-line text-base"></i>
           </button>
         </div>
       </aside>

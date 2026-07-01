@@ -4,20 +4,24 @@ if (!process.env.MONGO_URI) {
   throw new Error("MONGO_URI is not defined in environment variables");
 }
 
-if (!process.env.GOOGLE_CLIENT_ID) {
-  throw new Error("GOOGLE_CLIENT_ID is not defined in environment variables");
-}
+const useSMTPPassword = !!process.env.SMTP_PASSWORD;
 
-if (!process.env.GOOGLE_CLIENT_SECRET) {
-  throw new Error(
-    "GOOGLE_CLIENT_SECRET is not defined in environment variables",
-  );
-}
+if (!useSMTPPassword) {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new Error("GOOGLE_CLIENT_ID is not defined in environment variables");
+  }
 
-if (!process.env.GOOGLE_REFRESH_TOKEN) {
-  throw new Error(
-    "GOOGLE_REFRESH_TOKEN is not defined in environment variables",
-  );
+  if (!process.env.GOOGLE_CLIENT_SECRET) {
+    throw new Error(
+      "GOOGLE_CLIENT_SECRET is not defined in environment variables",
+    );
+  }
+
+  if (!process.env.GOOGLE_REFRESH_TOKEN) {
+    throw new Error(
+      "GOOGLE_REFRESH_TOKEN is not defined in environment variables",
+    );
+  }
 }
 
 if (!process.env.JWT_SECRET) {
@@ -42,8 +46,12 @@ export const config = {
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   GOOGLE_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,
   GOOGLE_USER: process.env.GOOGLE_USER,
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
   JWT_SECRET: process.env.JWT_SECRET,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+  SERVER_URL: process.env.SERVER_URL || "http://localhost:4000",
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
 };
+
