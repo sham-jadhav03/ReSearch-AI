@@ -6,7 +6,6 @@ Welcome to **Research-AI**! This is a full-stack, real-time chat application bui
 
 ## 📖 Table of Contents
 - [Project Overview](#-project-overview)
-- [Architecture](#-architecture)
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
 - [Getting Started](#-getting-started)

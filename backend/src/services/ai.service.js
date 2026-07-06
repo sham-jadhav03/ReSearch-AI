@@ -56,7 +56,7 @@ Clear, authoritative, concise, insight-driven.
 `;
 
 export const generateResponse = async (message, onChunk, options = {}) => {
-  console.log(message);
+ // console.log(message);
 
   const response = await searchAgent.stream(
     {
@@ -143,7 +143,7 @@ export const generateResponse = async (message, onChunk, options = {}) => {
 
       if (text) {
         finalMessage += text;
-        
+
         const lastPart = parts[parts.length - 1];
         if (lastPart && lastPart.type === "text") {
           lastPart.text += text;
@@ -187,6 +187,9 @@ export const generateChatTitle = async (message) => {
             "${message}"
             `),
   ]);
+
+  console.log(response.text);
+
 
   return response.text;
 };
