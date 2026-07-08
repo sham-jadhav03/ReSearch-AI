@@ -19,7 +19,7 @@ const RootComponent = () => {
     );
   }
 
-  return user ? <DashBoard /> : <Landing />;
+  return user ? <Protected><DashBoard /></Protected> : <Landing />;
 };
 
 export const router = createBrowserRouter([
