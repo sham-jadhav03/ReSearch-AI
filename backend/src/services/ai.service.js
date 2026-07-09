@@ -2,6 +2,8 @@ import {
   HumanMessage,
   SystemMessage,
   AIMessage,
+  createAgent,
+  toolStrategy,
 } from "langchain";
 import * as z from "zod";
 import { mistralModel } from "../ai/model.js";
@@ -55,14 +57,13 @@ TONE:
 Clear, authoritative, concise, insight-driven.
 `;
 
-export const generateResponse = async (message, onChunk, options = {}) => {
- // console.log(message);
+export const generateResponse = async ({ content }) => {
 
   const response = await searchAgent.stream(
     {
       messages: [
         new SystemMessage(System_Prompt),
-        ...message.map((msg) => {
+        ...content.map((msg) => {
           if (msg.role == "user") {
             return new HumanMessage(msg.content);
           } else if (msg.role == "ai") {
@@ -71,111 +72,26 @@ export const generateResponse = async (message, onChunk, options = {}) => {
         }),
       ],
     },
-    { streamMode: "messages", signal: options.signal },
+    { streamMode: "messages" },
   );
 
-  let finalMessage = "";
-  const parts = [];
-
-  for await (const [chunk, metadata] of response) {
-    if (options.signal?.aborted) {
-      break;
-    }
-    const msgType =
-      typeof chunk?.getType === "function" ? chunk.getType() : chunk?.type;
-    const isAIMessage =
-      msgType === "ai" || chunk?.constructor?.name?.includes("AIMessage");
-    const isToolMessage =
-      msgType === "tool" || chunk?.constructor?.name?.includes("ToolMessage");
-
-    if (isAIMessage) {
-      if (chunk.tool_call_chunks && chunk.tool_call_chunks.length > 0) {
-        for (const tc of chunk.tool_call_chunks) {
-          if (tc.name) {
-            parts.push({
-              type: "dynamic-tool",
-              toolName: tc.name,
-              state: "streaming",
-              args: "",
-              output: null,
-            });
-
-            if (onChunk) {
-              onChunk({
-                type: "tool-call-start",
-                toolName: tc.name,
-                toolCallId: tc.id || tc.index,
-              });
-            }
-          }
-
-          if (tc.args) {
-            const lastPart = parts[parts.length - 1];
-            if (
-              lastPart &&
-              lastPart.type === "dynamic-tool" &&
-              lastPart.state === "streaming"
-            ) {
-              lastPart.args = (lastPart.args || "") + tc.args;
-            }
-
-            if (onChunk) {
-              onChunk({
-                type: "tool-call-delta",
-                toolName: tc.name || lastPart?.toolName,
-                args: tc.args,
-              });
-            }
-          }
-        }
-      }
-
-      let text = "";
-
-      if (typeof chunk?.content === "string" && chunk.content) {
-        text = chunk.content;
-      } else if (Array.isArray(chunk?.content)) {
-        text = chunk.content
-          .filter((c) => c.type === "text")
-          .map((c) => c.text)
-          .join("");
-      }
-
-      if (text) {
-        finalMessage += text;
-
-        const lastPart = parts[parts.length - 1];
-        if (lastPart && lastPart.type === "text") {
-          lastPart.text += text;
-        } else {
-          parts.push({ type: "text", text });
-        }
-
-        if (onChunk) onChunk({ type: "text-delta", delta: text });
-      }
-    } else if (isToolMessage) {
-      const activeToolIndex = parts.findLastIndex(
-        (p) => p.type === "dynamic-tool" && p.toolName === chunk.name
-      );
-      if (activeToolIndex !== -1) {
-        parts[activeToolIndex].state = "done";
-        parts[activeToolIndex].output = chunk.content;
-      }
-
-      if (onChunk) {
-        onChunk({
-          type: "tool-call-result",
-          toolName: chunk.name,
-          result: chunk.content,
-        });
-      }
-    }
-  }
-
-  return { finalMessage, parts };
-};
+  return response
+}
 
 export const generateChatTitle = async (message) => {
+
+  const titleAgent = createAgent.invoke({
+    messages: [
+      {
+        role: "user",
+        tools: [],
+        responseFormat: toolStrategy(z.object({
+          chatTitile: z.string().describe("")
+        }))
+      }
+    ]
+  })
+
   const response = await mistralModel.invoke([
     new SystemMessage(`
             You are a helpful assistant that generates concise and description title for chat conversations.
@@ -187,9 +103,6 @@ export const generateChatTitle = async (message) => {
             "${message}"
             `),
   ]);
-
-  console.log(response.text);
-
 
   return response.text;
 };
