@@ -1,5 +1,6 @@
 import { createAgent, toolStrategy } from "langchain";
 import { mistralModel } from "../model.js";
+import z from "zod";
 
 const model = mistralModel
 

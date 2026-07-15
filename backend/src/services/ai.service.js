@@ -2,12 +2,9 @@ import {
   HumanMessage,
   SystemMessage,
   AIMessage,
-  createAgent,
-  toolStrategy,
 } from "langchain";
-import * as z from "zod";
-import { mistralModel } from "../ai/model.js";
 import { searchAgent } from "../ai/agents/search.agent.js";
+import { titleAgent } from "../ai/tools/title.tool.js";
 
 const System_Prompt = `
 You are ResearchAI, a professional answer engine that produces reliable, structured, source-backed responses.
@@ -80,19 +77,7 @@ export const generateResponse = async ({ content }) => {
 
 export const generateChatTitle = async (message) => {
 
-  const titleAgent = createAgent.invoke({
-    messages: [
-      {
-        role: "user",
-        tools: [],
-        responseFormat: toolStrategy(z.object({
-          chatTitile: z.string().describe("")
-        }))
-      }
-    ]
-  })
-
-  const response = await mistralModel.invoke([
+  const response = await titleAgent.invoke([
     new SystemMessage(`
             You are a helpful assistant that generates concise and description title for chat conversations.
             User will provide you with the first message of a chat conversation, and you will generate a title that captures the essence of the conversation in 2-4 words.
