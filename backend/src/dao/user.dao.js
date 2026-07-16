@@ -5,7 +5,7 @@ export const findUserByEmail = (email) => {
 };
 
 export const findUserByUsernameOrEmail = (username, email) =>{
-    return userModel. findOne({
+    return userModel.findOne({
         $or: [
             {username},
             {email}
@@ -15,14 +15,14 @@ export const findUserByUsernameOrEmail = (username, email) =>{
 
 export const createUser = (userData) => {
     return userModel.create(userData);
-;}
+};
 
 export const findUserById = (id) => {
     return userModel.findById(id);
 }
 
 export const findUserWithoutPassword = (id) => {
-    return userModel.findById(id).select("")
+    return userModel.findById(id).select("-password")
 };
 
 export const verifyUser = async (email) => {

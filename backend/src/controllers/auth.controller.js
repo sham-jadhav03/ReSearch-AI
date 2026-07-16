@@ -2,6 +2,7 @@ import userModel from "../models/user.model.js";
 import { sendEmail } from "../services/mail.service.js";
 import jwt from "jsonwebtoken";
 import { config } from "../config/config.js";
+import { createUser, findUserByEmail, findUserWithoutPassword, findUserByUsernameOrEmail, verifyUser } from "../dao/user.dao.js";
 
 /**
  * @desc Register a new user
@@ -13,9 +14,7 @@ export const register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
 
-    const isUserAlreadyExist = await userModel.findOne({
-      $or: [{ username }, { email }],
-    });
+    const isUserAlreadyExist = await findUserByUsernameOrEmail(username, email)
 
     if (isUserAlreadyExist) {
       return res.status(400).json({
@@ -25,11 +24,11 @@ export const register = async (req, res, next) => {
       });
     }
 
-    const user = await userModel.create({
+    const user = await createUser({
       username,
       email,
-      password,
-    });
+      password
+    })
 
     const emailVerificationToken = jwt.sign(
       {
@@ -80,7 +79,7 @@ export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email });
+    const user = await findUserByEmail(email)
 
     if (!user) {
       return res.status(400).json({
@@ -147,7 +146,7 @@ export const getMe = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const user = await userModel.findById(userId).select("-password");
+    const user = await findUserWithoutPassword(userId);
 
     if (!user) {
       return res.status(404).json({
@@ -178,7 +177,7 @@ export const verifyEmail = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, config.JWT_SECRET);
 
-    const user = await userModel.findOne({ email: decoded.email });
+    const user = await verifyUser(decoded.email);
 
     if (!user) {
       return res.status(400).json({
@@ -187,9 +186,6 @@ export const verifyEmail = async (req, res, next) => {
         err: "User not found",
       });
     }
-
-    user.verified = true;
-    await user.save();
 
     const frontendLoginLink = `${config.CLIENT_URL}/login`;
 
