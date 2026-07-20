@@ -1,4 +1,4 @@
-import chatModel from "../models/chat.model"
+import chatModel from "../models/chat.model.js"
 
 export const createChat = (data) => {
     return chatModel.create(data);

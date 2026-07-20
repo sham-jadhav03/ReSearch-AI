@@ -8,6 +8,12 @@ import {
   parseCitations,
 } from "../services/ai.service.js";
 
+/**
+ * @desc Send message to AI
+ * @route POST /api/chat/message
+ * @access Private
+ * @body { message, chat, resumeFromIndex }
+ */
 export const sendMessage = async (req, res, next) => {
   try {
     const { message, chat: chatId, resumeFromIndex } = req.body;
@@ -134,6 +140,13 @@ export const sendMessage = async (req, res, next) => {
   }
 };
 
+/**
+ * 
+ * @desc get all chats
+ * @route  GET /api/chat/
+ * @access Private
+ * @abstract To get all chats of user
+ */
 export const getChats = async (req, res, next) => {
   try {
     const user = req.user;
@@ -151,6 +164,13 @@ export const getChats = async (req, res, next) => {
   }
 };
 
+/**
+
+ * @desc get all messages of a chat
+ * @route GET /api/chat/:chatId/messages
+ * @access Private
+ * @abstract To get all messages of a chat
+ */
 export const getMessages = async (req, res, next) => {
   try {
     const { chatId } = req.params;
@@ -179,6 +199,12 @@ export const getMessages = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc delete a chat
+ * @route DELETE /api/chat/delete/:chatId
+ * @access Private
+ * @abstract To delete a chat
+ */
 export const deleteChat = async (req, res, next) => {
   try {
     const { chatId } = req.params;
