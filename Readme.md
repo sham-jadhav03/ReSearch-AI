@@ -207,7 +207,8 @@ Research-AI/
 │   │   │   ├── agents/           # Langchain Agents logic
 │   │   │   │   └── search.agent.js # Agent utilizing search tools
 │   │   │   ├── tools/            # Specialized AI tools (Search, etc.)
-│   │   │   │   └── internet.tool.js # Tavily Search implementation
+│   │   │   │   ├── internet.tool.js # Tavily Search implementation
+│   │   │   │   └── title.tool.js # Structured agent for generating chat titles
 │   │   │   └── model.js          # AI Models Initialization (Gemini, Mistral)
 │   │   ├── config/               # Database and server configurations
 │   │   │   ├── config.js         # Configuration setup
@@ -215,6 +216,10 @@ Research-AI/
 │   │   ├── controllers/          # Business logic handlers for specific routes
 │   │   │   ├── auth.controller.js # Logic for user registration, login, and logout
 │   │   │   └── chat.controller.js # Logic for handling chats and AI responses
+│   │   ├── dao/                  # Data Access Objects (DB query encapsulation)
+│   │   │   ├── chat.dao.js       # Data access operations for Chat model
+│   │   │   ├── message.dao.js    # Data access operations for Message model
+│   │   │   └── user.dao.js       # Data access operations for User model
 │   │   ├── middlewares/          # Security and request interceptors
 │   │   │   └── auth.middleware.js # Middleware to verify JWT tokens in cookies
 │   │   ├── models/               # MongoDB schema definitions using Mongoose
@@ -227,7 +232,6 @@ Research-AI/
 │   │   ├── services/             # Specialized logic and external integrations
 │   │   │   ├── ai.service.js     # Core AI logic (Gemini & Mistral integration)
 │   │   │   └── mail.service.js   # Email dispatch logic for verification
-
 │   │   ├── validators/           # Request body validation and sanitization
 │   │   │   └── auth.validator.js # Joi/Zod validators for auth inputs
 │   │   └── app.js                # Main Express application configuration
@@ -288,6 +292,9 @@ Research-AI/
     ├── index.html                # Root HTML template for the SPA
     ├── package.json              # Frontend dependencies (React, Redux, etc.)
     └── vite.config.js            # Vite bundler configuration and proxying
+├── flow.md                       # Technical workflow specifications (e.g. logout flow)
+├── improve.md                    # Production deployment and optimization checklist
+└── Readme.md                     # Project documentation and architecture guide
 ```
 
 ---
