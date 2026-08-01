@@ -1,14 +1,11 @@
-import "dotenv/config";
-import app from './src/app.js'
-import http from 'http'
-import connectDB from './src/config/db.js';
+import app from "./src/app.js"
+import { config } from "./src/config/config.js";
+import connectDB from "./src/config/db.js";
 
 connectDB();
 
-const PORT = process.env.PORT || 4000;
-const httpServer = http.createServer(app)
+const PORT = config.PORT | 4000;
 
-httpServer.listen(PORT, ()=> {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    
+app.listen(PORT, ()=> {
+    console.log(`Server is running on port 4000`);
 })

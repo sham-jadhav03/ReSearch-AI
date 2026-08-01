@@ -1,26 +1,16 @@
-import nodemailer from "nodemailer";
 import { config } from "../config/config.js";
+import nodemailer from "nodemailer";
 
-const transporterConfig = config.SMTP_PASSWORD
-  ? {
-      service: "gmail",
-      auth: {
-        user: config.GOOGLE_USER,
-        pass: config.SMTP_PASSWORD,
-      },
-    }
-  : {
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: config.GOOGLE_USER,
-        clientSecret: config.GOOGLE_CLIENT_SECRET,
-        refreshToken: config.GOOGLE_REFRESH_TOKEN,
-        clientId: config.GOOGLE_CLIENT_ID,
-      },
-    };
-
-const transporter = nodemailer.createTransport(transporterConfig);
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    type: "OAuth2",
+    user: config.GOOGLE_USER,
+    clientSecret: config.GOOGLE_CLIENT_SECRET,
+    refreshToken: config.GOOGLE_REFRESH_TOKEN,
+    clientId: config.GOOGLE_CLIENT_SECRET,
+  },
+});
 
 transporter
   .verify()
@@ -28,7 +18,7 @@ transporter
     console.log("Email transporter is ready to send emails.");
   })
   .catch((err) => {
-    console.error("Email transporter verification failed:", err);
+    console.log("Email transporter verification failed:", err);
   });
 
 export const sendEmail = async ({ to, subject, html, text }) => {
