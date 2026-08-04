@@ -4,17 +4,17 @@ import { ChatMistralAI } from "@langchain/mistralai";
 import { tavily as Tavily } from "@tavily/core";
 
 const Model_REGISTRY = {
-  "gemini-2.5-flash-lite": {
+  "gemini-3.5-flash-lite": {
     provider: "google",
     factory: () =>
       new ChatGoogleGenerativeAI({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.5-flash-lite",
         apiKey: config.GEMINI_API_KEY,
       }),
   },
 };
 
-export const FALLBACK_CHAIN = ["gemini-2.5-flash-lite"];
+export const FALLBACK_CHAIN = ["gemini-3.5-flash-lite"];
 
 const instanceCache = new Map();
 

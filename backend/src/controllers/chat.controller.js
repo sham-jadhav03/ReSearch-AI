@@ -154,6 +154,8 @@ export const getMessages = async (req, res) => {
 export const deleteChat = async (req, res) => {
   try {
     const { chatId } = req.params;
+    console.log(req.params);
+    
     const userId = req.user?.id || req.user?._id;
 
     const chat = await chatModel.findOneAndUpdate(

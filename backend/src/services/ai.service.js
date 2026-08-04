@@ -53,6 +53,8 @@ export const generateResponse = async (messages, onChunk) => {
 
     try {
       return await runAgent(modelId, messages, onChunk);
+
+      console.log(runAgent);
     } catch (err) {
       lasError = err;
       console.error(`generateResponse: model "${modelId} failed"`, err);
@@ -70,7 +72,7 @@ const runAgent = async (modelId, messages, onChunk) => {
       messages: toLangchainMessages(messages),
     },
     {
-      streamMode: "messages-tuple",
+      streamMode: "messages",
       recursionLimit: RECURSION_LIMIT,
     },
   );
@@ -170,9 +172,9 @@ const handleAIChunk = (chunk, parts, onChunk, appendText) => {
 };
 
 const handleToolChunk = (chunk, parts, onChunk) => {
-  const activeToolIndex = parts.findLastIndex((p) => {
-    p.type === "dynamic-tool" && p.toolName === chunk.name;
-  });
+  const activeToolIndex = parts.findLastIndex(
+    (p) => p.type === "dynamic-tool" && p.toolName === chunk.name
+  );
   if (activeToolIndex !== -1) {
     parts[activeToolIndex].state = "done";
     parts[activeToolIndex].output = chunk.content;

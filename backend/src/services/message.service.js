@@ -1,3 +1,4 @@
+// message.service.js
 import messageModel from "../models/message.model.js";
 import chatModel from "../models/chat.model.js";
 import { createMessageSchema } from "../validators/message.validator.js";
@@ -7,28 +8,13 @@ import { createMessageSchema } from "../validators/message.validator.js";
  * then keeps the parent chat's activity metadata in sync. Explicit here
  * rather than a post-save hook — visible in the call site, not implicit.
  */
-const normalizePayload = (payload) => {
-  const normalizedContent = typeof payload.content === "string" ? payload.content : "";
-  const content = normalizedContent.trim()
-    ? normalizedContent.trim()
-    : payload.role === "ai"
-      ? "No response generated."
-      : normalizedContent;
-
-  return {
-    ...payload,
-    content,
-  };
-};
-
 const persistMessage = async (payload) => {
-  const normalizedPayload = normalizePayload(payload);
-  const parsed = createMessageSchema.parse(normalizedPayload);
+  const parsed = createMessageSchema.parse(payload);
   const message = await messageModel.create(parsed);
 
   await chatModel.updateOne(
-    { _id: normalizedPayload.chat },
-    { $set: { lastMessageAt: new Date() }, $inc: { messageCount: 1 } }
+    { _id: payload.chat },
+    { $set: { lastMessageAt: new Date() }, $inc: { messageCount: 1 } },
   );
 
   return message;
