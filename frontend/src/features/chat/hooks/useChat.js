@@ -1,4 +1,3 @@
-
 import {
   sendMessage,
   getChats,
@@ -16,22 +15,16 @@ import {
   setLoading,
 } from "../state/chat.slices";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export const useChat = () => {
   const dispatch = useDispatch();
   const chats = useSelector((state) => state.chat.chats);
-  const user = useSelector((state) => state.auth.user);
   const [streamingParts, setStreamingParts] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const streamingPartsRef = useRef([]);
 
-  useEffect(() => {
-    if (!user?._id) return;
-    // Real-time events are now handled via SSE
-  }, [user?._id]);
-
-  async function handleSendMessage({ message, chatId }) {
+  const handleSendMessage = useCallback(async ({ message, chatId }) => {
     let resolvedChatId = chatId;
     let isDone = false;
     let retryCount = 0;
@@ -39,14 +32,12 @@ export const useChat = () => {
 
     dispatch(setError(null));
     dispatch(setLoading(true));
-    // Reset streaming state ONLY on first attempt
     streamingPartsRef.current = [];
     setStreamingParts([]);
     setIsStreaming(false);
 
     while (!isDone && retryCount < MAX_RETRIES) {
       try {
-        // Calculate how much text we already have to resume correctly
         const receivedTextLength = streamingPartsRef.current
           .filter((p) => p.type === "text")
           .reduce((acc, p) => acc + p.text.length, 0);
@@ -72,7 +63,6 @@ export const useChat = () => {
 
           for (const line of chunkParts) {
             if (!line.startsWith("data:")) continue;
-
             const jsonStr = line.replace(/^data:\s*/, "").trim();
             if (!jsonStr) continue;
 
@@ -84,41 +74,24 @@ export const useChat = () => {
               continue;
             }
 
-            // "start": event
             if (parsed.type === "start") {
               resolvedChatId = resolvedChatId || parsed.chatId;
 
-              // Only add UI state if this is the VERY first start (not a resume)
               if (!chatId && receivedTextLength === 0) {
-                dispatch(
-                  createNewChat({
-                    chatId: resolvedChatId,
-                    title: parsed.title,
-                  }),
-                );
-                dispatch(
-                  addNewMessage({
-                    chatId: resolvedChatId,
-                    content: message,
-                    role: "user",
-                  }),
-                );
+                dispatch(createNewChat({ chatId: resolvedChatId, title: parsed.title }));
+                dispatch(addNewMessage({ chatId: resolvedChatId, content: message, role: "user" }));
               }
 
               dispatch(setCurrentChatId(resolvedChatId));
               setIsStreaming(true);
             }
 
-            // "text-delta": event
             if (parsed.type === "text-delta") {
               const partsArray = streamingPartsRef.current;
               const lastPart = partsArray[partsArray.length - 1];
 
               if (lastPart && lastPart.type === "text") {
-                partsArray[partsArray.length - 1] = {
-                  ...lastPart,
-                  text: lastPart.text + parsed.delta,
-                };
+                partsArray[partsArray.length - 1] = { ...lastPart, text: lastPart.text + parsed.delta };
               } else {
                 partsArray.push({ type: "text", text: parsed.delta });
               }
@@ -131,13 +104,10 @@ export const useChat = () => {
               }
             }
 
-            // "tool-call-start": event
             if (parsed.type === "tool-call-start") {
-              // Avoid duplicate tool UI if resuming
               const exists = streamingPartsRef.current.some(
                 (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName
               );
-
               if (!exists) {
                 streamingPartsRef.current.push({
                   type: "dynamic-tool",
@@ -146,7 +116,6 @@ export const useChat = () => {
                   args: "",
                   output: null,
                 });
-
                 if (!frame) {
                   frame = requestAnimationFrame(() => {
                     setStreamingParts([...streamingPartsRef.current]);
@@ -156,18 +125,12 @@ export const useChat = () => {
               }
             }
 
-            // "tool-call-delta": event
             if (parsed.type === "tool-call-delta") {
               const partsArray = streamingPartsRef.current;
               const lastPart = partsArray[partsArray.length - 1];
-              if (
-                lastPart &&
-                lastPart.type === "dynamic-tool" &&
-                lastPart.state === "streaming"
-              ) {
+              if (lastPart && lastPart.type === "dynamic-tool" && lastPart.state === "streaming") {
                 lastPart.args = (lastPart.args || "") + parsed.args;
               }
-
               if (!frame) {
                 frame = requestAnimationFrame(() => {
                   setStreamingParts([...streamingPartsRef.current]);
@@ -176,37 +139,21 @@ export const useChat = () => {
               }
             }
 
-            // "tool-call-result": event
             if (parsed.type === "tool-call-result") {
               const partsArray = streamingPartsRef.current;
               const activeToolIndex = partsArray.findLastIndex(
-                (p) =>
-                  p.type === "dynamic-tool" &&
-                  p.toolName === parsed.toolName &&
-                  p.state === "streaming",
+                (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName && p.state === "streaming"
               );
-
               if (activeToolIndex !== -1) {
-                partsArray[activeToolIndex] = {
-                  ...partsArray[activeToolIndex],
-                  state: "done",
-                  output: parsed.result,
-                };
+                partsArray[activeToolIndex] = { ...partsArray[activeToolIndex], state: "done", output: parsed.result };
               } else {
-                // If we missed the start or it already finished, ensure it's in the state as done
                 const alreadyDone = partsArray.some(
                   (p) => p.type === "dynamic-tool" && p.toolName === parsed.toolName && p.state === "done"
                 );
                 if (!alreadyDone) {
-                   partsArray.push({
-                     type: "dynamic-tool",
-                     toolName: parsed.toolName,
-                     state: "done",
-                     output: parsed.result,
-                   });
+                  partsArray.push({ type: "dynamic-tool", toolName: parsed.toolName, state: "done", output: parsed.result });
                 }
               }
-
               if (!frame) {
                 frame = requestAnimationFrame(() => {
                   setStreamingParts([...streamingPartsRef.current]);
@@ -215,7 +162,6 @@ export const useChat = () => {
               }
             }
 
-            // "done": event
             if (parsed.type === "done") {
               isDone = true;
               const finalChatId = resolvedChatId || parsed.aiMessage?.chat;
@@ -228,17 +174,15 @@ export const useChat = () => {
                   citations: parsed.citations || [],
                   hasCitations: parsed.hasCitations || false,
                   parts: [...streamingPartsRef.current],
-                }),
+                })
               );
 
-              // Clear streaming state
               setStreamingParts([]);
               setIsStreaming(false);
               streamingPartsRef.current = [];
               dispatch(setLoading(false));
             }
 
-            // "error": event
             if (parsed.type === "error") {
               throw new Error("AI Stream Error");
             }
@@ -253,21 +197,19 @@ export const useChat = () => {
           dispatch(setLoading(false));
           break;
         }
-        // Wait before retrying (exponential backoff)
         await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
       }
     }
-  }
+  }, [dispatch]);
 
-  async function handleGetChats() {
+  const handleGetChats = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       const data = await getChats();
-      console.log(data);
-      const chats = data?.chats || [];
+      const fetchedChats = data?.chats || [];
       dispatch(
         setChats(
-          chats.reduce((acc, chat) => {
+          fetchedChats.reduce((acc, chat) => {
             if (!chat?._id) return acc;
             acc[chat._id] = {
               id: chat._id,
@@ -276,20 +218,17 @@ export const useChat = () => {
               lastUpdated: chat.updatedAt,
             };
             return acc;
-          }, {}),
-        ),
+          }, {})
+        )
       );
     } catch (error) {
-      dispatch(setError(null));
-      dispatch(
-        setError(error.response?.data?.message || "Failed to fetch user data"),
-      );
+      dispatch(setError(error.response?.data?.message || "Failed to fetch user data"));
     } finally {
       dispatch(setLoading(false));
     }
-  }
+  }, [dispatch]);
 
-  async function handleOpenChat(chatId) {
+  const handleOpenChat = useCallback(async (chatId) => {
     try {
       if (!chats[chatId]?.messages?.length) {
         const data = await getMessages({ chatId });
@@ -303,34 +242,25 @@ export const useChat = () => {
           parts: msg.parts || [],
         }));
 
-        dispatch(
-          addMessages({
-            chatId,
-            messages: formattedMessages,
-          }),
-        );
+        dispatch(addMessages({ chatId, messages: formattedMessages }));
       }
       dispatch(setCurrentChatId(chatId));
     } catch (error) {
-      dispatch(
-        setError(error.response?.data?.message || "Failed to load message"),
-      );
+      dispatch(setError(error.response?.data?.message || "Failed to load message"));
     }
-  }
+  }, [chats, dispatch]);
 
-  async function handleDeleteChat(chatId) {
+  const handleDeleteChat = useCallback(async (chatId) => {
     try {
       dispatch(setLoading(true));
       await deleteChatApi({ chatId });
       dispatch(deleteChat({ chatId }));
     } catch (error) {
-      dispatch(
-        setError(error.response?.data.message || "Unable to delete chat."),
-      );
+      dispatch(setError(error.response?.data?.message || "Unable to delete chat."));
     } finally {
       dispatch(setLoading(false));
     }
-  }
+  }, [dispatch]);
 
   return {
     handleSendMessage,

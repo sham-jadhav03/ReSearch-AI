@@ -122,7 +122,8 @@ export const getChats = async (req, res) => {
     const userId = req.user?.id || req.user?._id;
     const chats = await chatModel
       .find({ user: userId, deletedAt: null })
-      .sort({ lastMessageAt: -1 });
+      .sort({ lastMessageAt: -1 })
+      .lean();
 
     res.status(200).json({ message: "Chats retrieved successfully.", chats });
   } catch (err) {
@@ -136,12 +137,12 @@ export const getMessages = async (req, res) => {
     const { chatId } = req.params;
     const userId = req.user?.id || req.user?._id;
 
-    const chat = await chatModel.findOne({ _id: chatId, user: userId, deletedAt: null });
+    const chat = await chatModel.findOne({ _id: chatId, user: userId, deletedAt: null }).lean();
     if (!chat) {
       return res.status(404).json({ message: "Chat not found.", success: false });
     }
 
-    const messages = await messageModel.find({ chat: chatId }).sort({ createdAt: 1 });
+    const messages = await messageModel.find({ chat: chatId }).sort({ createdAt: 1 }).lean();
 
     res.status(200).json({ message: "Messages retrieved successfully.", messages });
   } catch (err) {
