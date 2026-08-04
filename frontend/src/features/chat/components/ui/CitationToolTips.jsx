@@ -16,6 +16,8 @@ const CitationToolTips = ({ citation }) => {
             <img
               src={faviconUrl}
               alt={domain}
+              loading="lazy"
+              decoding="async"
               className="w-4 h-4 rounded-sm"
               onError={(e) => {
                 e.target.style.display = "none";

@@ -118,38 +118,56 @@ export const sendMessage = async (req, res) => {
 };
 
 export const getChats = async (req, res) => {
-  const chats = await chatModel
-    .find({ user: req.user.id, deletedAt: null })
-    .sort({ lastMessageAt: -1 });
+  try {
+    const userId = req.user?.id || req.user?._id;
+    const chats = await chatModel
+      .find({ user: userId, deletedAt: null })
+      .sort({ lastMessageAt: -1 });
 
-  res.status(200).json({ message: "Chats retrieved successfully.", chats });
+    res.status(200).json({ message: "Chats retrieved successfully.", chats });
+  } catch (err) {
+    console.error("getChats error:", err);
+    res.status(500).json({ message: "Failed to retrieve chats.", success: false });
+  }
 };
 
 export const getMessages = async (req, res) => {
-  const { chatId } = req.params;
+  try {
+    const { chatId } = req.params;
+    const userId = req.user?.id || req.user?._id;
 
-  const chat = await chatModel.findOne({ _id: chatId, user: req.user.id, deletedAt: null });
-  if (!chat) {
-    return res.status(404).json({ message: "Chat not found.", success: false });
+    const chat = await chatModel.findOne({ _id: chatId, user: userId, deletedAt: null });
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found.", success: false });
+    }
+
+    const messages = await messageModel.find({ chat: chatId }).sort({ createdAt: 1 });
+
+    res.status(200).json({ message: "Messages retrieved successfully.", messages });
+  } catch (err) {
+    console.error("getMessages error:", err);
+    res.status(500).json({ message: "Failed to retrieve messages.", success: false });
   }
-
-  const messages = await messageModel.find({ chat: chatId }).sort({ createdAt: 1 });
-
-  res.status(200).json({ message: "Messages retrieved successfully.", messages });
 };
 
 export const deleteChat = async (req, res) => {
-  const { chatId } = req.params;
+  try {
+    const { chatId } = req.params;
+    const userId = req.user?.id || req.user?._id;
 
-  const chat = await chatModel.findOneAndUpdate(
-    { _id: chatId, user: req.user.id, deletedAt: null },
-    { $set: { deletedAt: new Date() } },
-    { new: true }
-  );
+    const chat = await chatModel.findOneAndUpdate(
+      { _id: chatId, user: userId, deletedAt: null },
+      { $set: { deletedAt: new Date() } },
+      { new: true }
+    );
 
-  if (!chat) {
-    return res.status(404).json({ message: "Chat not found.", success: false });
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found.", success: false });
+    }
+
+    res.status(200).json({ message: "Chat deleted successfully." });
+  } catch (err) {
+    console.error("deleteChat error:", err);
+    res.status(500).json({ message: "Failed to delete chat.", success: false });
   }
-
-  res.status(200).json({ message: "Chat deleted successfully." });
 };

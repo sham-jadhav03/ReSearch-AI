@@ -47,7 +47,9 @@ export const renderWithCitations = (children, citations) => {
   return children;
 };
 
-export const buildMarkdownComponents = (citations = []) => ({
+const DEFAULT_CITATIONS = [];
+
+const createMarkdownComponents = (citations = DEFAULT_CITATIONS) => ({
   p: ({ children }) => (
     <div className="mb-5 last:mb-0 leading-[1.7] text-[#ececf1]">
       {renderWithCitations(children, citations)}
@@ -132,5 +134,19 @@ export const buildMarkdownComponents = (citations = []) => ({
   ),
   hr: () => <hr className="my-8 border-white/10" />,
 });
+
+const memoizeByCitations = (fn) => {
+  const cache = new Map();
+  return (citations = DEFAULT_CITATIONS) => {
+    const key = citations ?? DEFAULT_CITATIONS;
+    if (!cache.has(key)) {
+      cache.set(key, fn(key));
+    }
+    return cache.get(key);
+  };
+};
+
+// Prevents MessageRenderer/ReactMarkdown from treating `components` as changed on every streaming frame.
+export const buildMarkdownComponents = memoizeByCitations(createMarkdownComponents);
 
 export const markdownComponents = buildMarkdownComponents([]);

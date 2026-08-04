@@ -24,6 +24,18 @@ const getToolQuery = (args) => {
   }
 };
 
+const MemoizedTextPart = React.memo(({ text, components }) => {
+  return (
+    <ReactMarkDown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw]}
+      components={components}
+    >
+      {fixIncompleteMarkdown(text)}
+    </ReactMarkDown>
+  );
+});
+
 export const MessageRenderer = ({ parts, citations = [] }) => {
   const components = citations.length > 0 ? buildMarkdownComponents(citations) : markdownComponents;
 
@@ -34,14 +46,11 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
       {parts.map((part, index) => {
         if (part.type === "text") {
           return (
-            <ReactMarkDown
+            <MemoizedTextPart
               key={index}
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
+              text={part.text}
               components={components}
-            >
-              {fixIncompleteMarkdown(part.text)}
-            </ReactMarkDown>
+            />
           );
         }
 

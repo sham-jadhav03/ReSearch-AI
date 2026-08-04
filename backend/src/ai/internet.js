@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { tavily } from "./model";
+import { tavily } from "./model.js";
 import { JSONSchema } from "zod/v4/core";
 
 export const internetSearchOutSchema = z.array(

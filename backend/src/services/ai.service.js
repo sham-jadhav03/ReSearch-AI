@@ -1,5 +1,5 @@
 import { AIMessage, HumanMessage, SystemMessage } from "langchain";
-import { FALLBACK_CHAIN } from "../ai/model";
+import { FALLBACK_CHAIN } from "../ai/model.js";
 import { check } from "zod";
 
 const System_Prompt = `

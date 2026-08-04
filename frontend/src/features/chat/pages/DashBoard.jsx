@@ -1,20 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import ReactMarkDown from "react-markdown";
+import { useEffect, useRef, useState, useMemo } from "react";
 import "remixicon/fonts/remixicon.css";
 import { useChat } from "../hooks/useChat";
 import { useDispatch, useSelector } from "react-redux";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
-import { setCurrentChatId } from "../state/chat.slices";
-import LogoIcon from "../shared/LogoIcon";
+import { setCurrentChatId, setError } from "../state/chat.slices";
 import Sidebar from "../components/Sidebar";
-import { SUGGESTIONS } from "../shared/global";
-import {
-  markdownComponents,
-  buildMarkdownComponents,
-} from "../components/MarkdownComponents";
 import ChatInput from "../components/ChatInput";
-import { MessageRenderer } from "../components/MessageRenderer";
+import ErrorBanner from "../components/ErrorBanner";
+import EmptyState from "../components/EmptyState";
+import MessageList from "../components/MessageList";
+import ThinkingIndicator from "../components/ThinkingIndicator";
+import StreamingBubble from "../components/StreamingBubble";
 
 const DashBoard = () => {
   const chat = useChat();
@@ -22,37 +17,46 @@ const DashBoard = () => {
   const { streamingParts, isStreaming, handleGetChats } = chat;
 
   const [chatInput, setChatInput] = useState("");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const messageEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const textAreaRef = useRef(null);
 
   const chats = useSelector((state) => state.chat.chats);
   const currentChatId = useSelector((state) => state.chat.currentChatId);
   const isLoading = useSelector((state) => state.chat.isLoading);
-  const currentMessages = chats[currentChatId]?.messages || [];
-  const currentChatTitle = chats[currentChatId]?.title || null;
+  const error = useSelector((state) => state.chat.error);
 
+  const currentMessages = useMemo(
+    () => chats[currentChatId]?.messages || [],
+    [chats, currentChatId]
+  );
+
+  const currentChatTitle = useMemo(
+    () => chats[currentChatId]?.title || null,
+    [chats, currentChatId]
+  );
+
+  // Smart auto-scroll logic
   useEffect(() => {
-    const scrollToBottom = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <= 100;
+
+    if (isStreaming) {
+      if (isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    } else {
       messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    };
-
-    // Auto-scroll whenever messages change
-    scrollToBottom();
-
-    // ResizeObserver ensures we scroll down even if an image or a Tool UI component
-    // suddenly pops into the DOM causing the container height to jump.
-    const observer = new ResizeObserver(scrollToBottom);
-    if (messageEndRef.current?.parentElement) {
-      observer.observe(messageEndRef.current.parentElement);
     }
-
-    return () => observer.disconnect();
-  }, [currentMessages, streamingParts]);
+  }, [currentMessages, streamingParts, isStreaming]);
 
   useEffect(() => {
-    // chat.intializeSocketConnect();  // handle inside useChat
     handleGetChats();
-  }, []);
+  }, [handleGetChats]);
 
   const handleSubmit = (e) => {
     e?.preventDefault();
@@ -68,7 +72,7 @@ const DashBoard = () => {
   };
 
   const openChat = (chatId) => {
-    chat.handleOpenChat(chatId, chats);
+    chat.handleOpenChat(chatId);
   };
 
   const handleSuggestion = (text) => {
@@ -84,6 +88,10 @@ const DashBoard = () => {
     dispatch(setCurrentChatId(null));
   };
 
+  const handleDismissError = () => {
+    dispatch(setError(null));
+  };
+
   const isEmpty = currentMessages.length === 0 && !isStreaming && !isLoading;
 
   return (
@@ -95,158 +103,51 @@ const DashBoard = () => {
         openChat={openChat}
         chats={chats}
         currentChatId={currentChatId}
+        isMobileOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* Main Chat Area */}
       <section className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-2.5 px-6 py-4 border-b border-white/[0.07] bg-[#161618] shrink-0">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            aria-label="Open sidebar"
+            className="md:hidden p-1.5 -ml-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <i className="ri-menu-line text-lg" />
+          </button>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-          <span className="text-[13px] text-[#888892]">
+          <span className="text-[13px] text-[#888892] truncate">
             {currentChatTitle || "New Chat"}
           </span>
         </div>
 
+        {/* Error Banner */}
+        {error && (
+          <ErrorBanner message={error} onDismiss={handleDismissError} />
+        )}
+
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
+        >
           <div className="max-w-3xl mx-auto px-4 py-7 flex flex-col gap-1">
             {/* Empty state */}
-            {isEmpty && (
-              <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/12 border border-blue-500/20 flex items-center justify-center">
-                  <LogoIcon size={22} />
-                </div>
-                <div>
-                  <p className="text-lg font-medium text-white mb-1">
-                    What do you want to research?
-                  </p>
-                  <p className="text-[13px] text-white/30 max-w-xs leading-relaxed">
-                    Ask anything — I'll search the web and give you
-                    source-backed answers.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 justify-center mt-2">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleSuggestion(s)}
-                      className="px-4 py-2 rounded-full border border-white/10 bg-white/4 text-[12px] text-white/50 hover:border-blue-500/50 hover:text-blue-400 hover:bg-blue-500/8 transition-all duration-150 cursor-pointer"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {isEmpty && <EmptyState handleSuggestion={handleSuggestion} />}
 
             {/* Message list */}
-            {currentMessages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-2`}
-              >
-                {message.role === "ai" && (
-                  <div className="w-8 h-8 rounded-full bg-[#10a37f] border border-white/10 flex items-center justify-center shrink-0 mr-4 mt-0.5 self-start shadow-sm">
-                    <LogoIcon size={16} color="white" />
-                  </div>
-                )}
-                <div
-                  className={`flex flex-col ${message.role === "user" ? "max-w-[70%]" : "max-w-[85%]"}`}
-                >
-                  {/* Bubble */}
-                  <div
-                    className={`rounded-2xl px-1 py-1 text-[16px] leading-relaxed
-                      ${
-                        message.role === "user"
-                          ? "bg-[#2f2f2f] border border-white/5 text-[#ececf1] px-5 py-3 rounded-2xl shadow-sm"
-                          : "bg-transparent text-[#ececf1]"
-                      }`}
-                  >
-                    {message.role === "user" ? (
-                      <p>{message.content}</p>
-                    ) : message.parts && message.parts.length > 0 ? (
-                      <MessageRenderer parts={message.parts} citations={message.citations || []} />
-                    ) : (
-                      <ReactMarkDown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeRaw]}
-                        components={buildMarkdownComponents(
-                          message.citations || [],
-                        )}
-                      >
-                        {message.content}
-                      </ReactMarkDown>
-                    )}
-                  </div>
-
-                  {/* Citation summary section (GPT-like sources footer) */}
-                  {message.role === "ai" &&
-                    message.hasCitations &&
-                    message.citations?.length > 0 && (
-                      <div className="mt-8 pt-4 border-t border-white/5">
-                        <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-white/40 uppercase tracking-widest">
-                          <i className="ri-quote-line" />
-                          Sources
-                        </div>
-                        <div className="flex flex-wrap gap-2 animate-fadeInUp">
-                          {message.citations.map((citation, i) => (
-                            <a
-                              key={citation.index}
-                              href={citation.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ animationDelay: `${i * 70}ms` }}
-                              className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer animate-fadeInUp"
-                            >
-                              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[9px] font-bold text-white/50 group-hover:text-white transition-colors">
-                                {citation.index}
-                              </span>
-                              <span className="text-[12px] text-white/50 group-hover:text-white/80 transition-colors truncate max-w-[150px]">
-                                {citation.title}
-                              </span>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                </div>
-              </div>
-            ))}
+            {currentMessages.length > 0 && (
+              <MessageList messages={currentMessages} />
+            )}
 
             {/* Thinking dots — before first token */}
-            {isLoading && !isStreaming && (
-              <div className="flex items-center gap-1.5 pl-9 py-2">
-                {[0, 150, 300].map((delay, i) => (
-                  <span
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-white/25 animate-bounce"
-                    style={{
-                      animationDelay: `${delay}ms`,
-                      animationDuration: "1s",
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+            {isLoading && !isStreaming && <ThinkingIndicator />}
 
             {/* Streaming bubble */}
-            {isStreaming && (
-              <div className="flex justify-start mb-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center shrink-0 mr-3 mt-1 self-start">
-                  <LogoIcon size={13} />
-                </div>
-                <div className="max-w-[85%] text-[15px] leading-relaxed text-[#d8d8e0]">
-                  {streamingParts && streamingParts.length > 0 ? (
-                    <MessageRenderer parts={streamingParts} />
-                  ) : null}
-                  {/* Blinking cursor */}
-                  <span
-                    className="inline-block w-1.5 h-4 bg-blue-400 ml-1 rounded-[1px] align-text-bottom"
-                    style={{ animation: "blink 1s step-end infinite" }}
-                  />
-                </div>
-              </div>
-            )}
+            {isStreaming && <StreamingBubble streamingParts={streamingParts} />}
 
             <div ref={messageEndRef} />
           </div>

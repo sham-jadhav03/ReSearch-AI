@@ -17,7 +17,9 @@ app.use(
 );
 
 import authRouter from "./routes/auth.routes.js";
+import chatRouter from "./routes/chat.routes.js";
 
 app.use("/api/auth", authRouter);
+app.use("/api/chat", chatRouter);
 
 export default app;

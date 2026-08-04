@@ -1,7 +1,7 @@
 import { createAgent, tool } from "langchain";
 import { z } from "zod";
-import { getModel } from "../model";
-import { internetSearch } from "../internet";
+import { getModel } from "../model.js";
+import { internetSearch } from "../internet.js";
 
 const searchInternetTool = tool(internetSearch, {
   name: "internetSearch",

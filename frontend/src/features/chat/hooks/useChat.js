@@ -37,6 +37,7 @@ export const useChat = () => {
     let retryCount = 0;
     const MAX_RETRIES = 3;
 
+    dispatch(setError(null));
     dispatch(setLoading(true));
     // Reset streaming state ONLY on first attempt
     streamingPartsRef.current = [];
@@ -248,8 +249,8 @@ export const useChat = () => {
         retryCount++;
         if (retryCount >= MAX_RETRIES) {
           setIsStreaming(false);
-          dispatch(setLoading(false));
           dispatch(setError("Connection lost. Please try again."));
+          dispatch(setLoading(false));
           break;
         }
         // Wait before retrying (exponential backoff)
@@ -262,12 +263,14 @@ export const useChat = () => {
     try {
       dispatch(setLoading(true));
       const data = await getChats();
-      const { chats } = data;
+      console.log(data);
+      const chats = data?.chats || [];
       dispatch(
         setChats(
           chats.reduce((acc, chat) => {
-            acc[chat?._id] = {
-              id: chat?._id,
+            if (!chat?._id) return acc;
+            acc[chat._id] = {
+              id: chat._id,
               title: chat.title,
               messages: [],
               lastUpdated: chat.updatedAt,

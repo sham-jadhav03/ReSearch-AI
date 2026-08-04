@@ -52,6 +52,9 @@ const chatSlice = createSlice({
     setLoading: (state, action) => {
       state.isLoading = action.payload;
     },
+    /**
+     * Sets the error state. Pass `null` to clear the error banner.
+     */
     setError: (state, action) => {
       state.error = action.payload;
     },
