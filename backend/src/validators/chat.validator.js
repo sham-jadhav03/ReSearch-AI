@@ -20,13 +20,17 @@ export const sendMessageValidator = [
     .isLength({ max: 4000 })
     .withMessage("Message must be under 4000 characters."),
 
+  // { nullable: true } is required here because the frontend sends
+  // `chat: null` explicitly for a brand-new chat (not `undefined`) —
+  // express-validator's .optional() only skips undefined by default,
+  // so without this, isValidObjectId(null) runs and fails validation.
   body("chat")
-    .optional()
+    .optional({ nullable: true })
     .custom(isValidObjectId)
     .withMessage("Invalid chat id."),
 
   body("resumeFromIndex")
-    .optional()
+    .optional({ nullable: true })
     .isInt({ min: 0 })
     .withMessage("resumeFromIndex must be a non-negative integer."),
 

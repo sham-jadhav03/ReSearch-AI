@@ -1,6 +1,7 @@
 import { AIMessage, HumanMessage, SystemMessage } from "langchain";
-import { FALLBACK_CHAIN } from "../ai/model.js";
-import { check } from "zod";
+import { FALLBACK_CHAIN, mistrilModel } from "../ai/model.js";
+import { searchAgent } from "../ai/agent/search.agent.js";
+import { internetSearchOutSchema } from "../ai/internet.js";
 
 const System_Prompt = `
 You are ResearchAI, a professional answer engine that produces reliable, structured, source-backed responses.
@@ -36,15 +37,14 @@ Clear, authoritative, concise, insight-driven.
 const RECURSION_LIMIT = 6;
 const MAX_MODEL_ATTEMPTS = FALLBACK_CHAIN.length;
 
-const toLangChainMessage = (messages) => [
+const toLangchainMessages = (messages) => [
   new SystemMessage(System_Prompt),
-  ...messages.map((msg) => {
+  ...messages.map((msg) =>
     msg.role === "user"
       ? new HumanMessage(msg.content)
-      : new AIMessage(msg.content);
-  }),
+      : new AIMessage(msg.content),
+  ),
 ];
-
 export const generateResponse = async (messages, onChunk) => {
   let lasError;
 
@@ -63,18 +63,28 @@ export const generateResponse = async (messages, onChunk) => {
 };
 
 const runAgent = async (modelId, messages, onChunk) => {
-  const agent = createSearchAgent(modelId);
+  const agent = searchAgent(modelId);
 
-  const stream = await agent.stream({
-    messages: toLangChainMessage(messages),
-    streameMode: "messages",
-    recusionLimit: RECURSION_LIMIT,
-  });
+  const stream = await agent.stream(
+    {
+      messages: toLangchainMessages(messages),
+    },
+    {
+      streamMode: "messages-tuple",
+      recursionLimit: RECURSION_LIMIT,
+    },
+  );
 
   let finalMessage = "";
 
   const parts = [];
-  for await (const [chunk, metadata] of stream) {
+  for await (const item of stream) {
+    const [chunk] = Array.isArray(item) ? item : [item];
+
+    if (!chunk) {
+      continue;
+    }
+
     const msgType =
       typeof chunk?.getType === "function" ? chunk.getType() : chunk?.type;
 
@@ -101,8 +111,10 @@ const runAgent = async (modelId, messages, onChunk) => {
 };
 
 const handleAIChunk = (chunk, parts, onChunk, appendText) => {
-  if (chunk.too_call_chunks?.length > 0) {
-    for (const tc of chunk.too_call_chunks) {
+  const toolCallChunks = chunk.tool_call_chunks ?? [];
+
+  if (toolCallChunks.length > 0) {
+    for (const tc of toolCallChunks) {
       if (tc.name) {
         parts.push({
           type: "dynamic-tool",
@@ -186,7 +198,9 @@ const buildCitations = (parts) => {
 
     let sources;
     try {
-      sources = internetSearchOutputSchema.parse(JSON.parse(part.output));
+      const output =
+        typeof part.output === "string" ? JSON.parse(part.output) : part.output;
+      sources = internetSearchOutSchema.parse(output);
     } catch (err) {
       console.error(
         "buildCitations: malformed internetSearch output, skipping",
@@ -209,7 +223,7 @@ const buildCitations = (parts) => {
 
 export const generateChatTitle = async (message) => {
   try {
-    const response = await titleModel.invoke([
+    const response = await mistrilModel.invoke([
       new SystemMessage(
         `Generate a concise 2-4 word title for a chat conversation based on the user's first message.`,
       ),

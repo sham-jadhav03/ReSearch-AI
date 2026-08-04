@@ -1,10 +1,9 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 export const chatMessageLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 15,
-  keyGenerator: (req) => req.user?.id ?? req.ip,
-  validate: { keyGeneratorIpFallback: false },
+  max: 30,
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: {
