@@ -21,7 +21,7 @@ const chatSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    deleteAt: {
+    deletedAt: {
       type: Date,
       default: null,
     },
