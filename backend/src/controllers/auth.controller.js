@@ -1,3 +1,4 @@
+import { success } from "zod";
 import { config } from "../config/config.js";
 import userModel from "../models/user.model.js";
 import { sendEmail } from "../services/mail.service.js";
@@ -33,8 +34,10 @@ export const register = async (req, res) => {
   const emailVerificationToken = jwt.sign(
     {
       email: user.email,
+      purpose: "email_verification",
     },
-    config.JWT_SECRET,
+    config.EMAIL_SECRET,
+    { expiresIn: "1h" },
   );
 
   try {
@@ -160,7 +163,15 @@ export const getMe = async (req, res) => {
 export const verifyEmail = async (req, res) => {
   const { token } = req.query;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, config.EMAIL_SECRET);
+
+    if(!decoded.email || typeof decoded.email !== "string" || decoded.purpose !== "email_verification") {
+      return res.status(400).json({
+        message: "Invalid token.",
+        success: false,
+        err: "Token purpose or email claim missing or invalid",
+      })
+    }
 
     const user = await userModel.findOne({ email: decoded.email });
 

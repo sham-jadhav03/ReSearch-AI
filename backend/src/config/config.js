@@ -29,6 +29,10 @@ if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in environment variables");
 }
 
+if (!process.env.EMAIL_SECRET) {
+  throw new Error("EMAIL_SECRET is not defined in environment variables");
+}
+
 if (!process.env.GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not defined in environment variables");
 }
@@ -44,6 +48,7 @@ if (!process.env.TAVILY_API_KEY) {
 export const config = {
   PORT: process.env.PORT,
   MONGO_URI: process.env.MONGO_URI,
+  EMAIL_SECRET: process.env.EMAIL_SECRET,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   GOOGLE_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,
