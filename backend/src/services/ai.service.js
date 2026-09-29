@@ -2,6 +2,7 @@ import { AIMessage, HumanMessage, SystemMessage } from "langchain";
 import { FALLBACK_CHAIN, mistrilModel } from "../ai/model.js";
 import { searchAgent } from "../ai/agent/search.agent.js";
 import { internetSearchOutSchema } from "../ai/internet.js";
+import { Result } from "express-validator";
 
 const System_Prompt = `
 You are ResearchAI, a professional answer engine that produces reliable, structured, source-backed responses.
@@ -45,23 +46,10 @@ const toLangchainMessages = (messages) => [
       : new AIMessage(msg.content),
   ),
 ];
+
 export const generateResponse = async (messages, onChunk) => {
-  let lasError;
-
-  for (let attempt = 0; attempt < MAX_MODEL_ATTEMPTS; attempt++) {
-    const modelId = FALLBACK_CHAIN[attempt];
-
-    try {
-      return await runAgent(modelId, messages, onChunk);
-
-      console.log(runAgent);
-    } catch (err) {
-      lasError = err;
-      console.error(`generateResponse: model "${modelId} failed"`, err);
-    }
-  }
-
-  throw lasError;
+  const modelId = FALLBACK_CHAIN[0];
+  return await runAgent(modelId, messages, onChunk);
 };
 
 const runAgent = async (modelId, messages, onChunk) => {
@@ -96,6 +84,19 @@ const runAgent = async (modelId, messages, onChunk) => {
     const isToolMessage =
       msgType === "tool" || chunk?.constructor?.name?.includes("ToolMessage");
 
+    // --- TEMP DIAGNOSTIC LOG ---
+    console.log("[diag] stream item:", {
+      isArray: Array.isArray(item),
+      itemLength: Array.isArray(item) ? item.length : undefined,
+      chunkConstructor: chunk?.constructor?.name ?? typeof chunk,
+      msgType,
+      isAIMessage,
+      isToolMessage,
+      chunkContent: chunk?.content,
+      toolCallChunks: chunk?.tool_call_chunks,
+    });
+    // --- END DIAGNOSTIC LOG ---
+
     if (isAIMessage) {
       handleAIChunk(chunk, parts, onChunk, (text) => (finalMessage += text));
     } else if (isToolMessage) {
@@ -104,6 +105,14 @@ const runAgent = async (modelId, messages, onChunk) => {
   }
 
   const citations = buildCitations(parts);
+
+  // --- TEMP DIAGNOSTIC LOG ---
+  console.log("[diag] runAgent final:", {
+    finalMessage,
+    parts,
+    citations,
+  });
+  // --- END DIAGNOSTIC LOG ---
 
   return {
     finalMessage,
@@ -121,7 +130,7 @@ const handleAIChunk = (chunk, parts, onChunk, appendText) => {
         parts.push({
           type: "dynamic-tool",
           toolName: tc.name,
-          state: "Streaming",
+          state: "streaming",
           args: "",
           output: null,
         });
@@ -173,15 +182,25 @@ const handleAIChunk = (chunk, parts, onChunk, appendText) => {
 
 const handleToolChunk = (chunk, parts, onChunk) => {
   const activeToolIndex = parts.findLastIndex(
-    (p) => p.type === "dynamic-tool" && p.toolName === chunk.name
+    (p) => p.type === "dynamic-tool" && p.toolName === chunk.name,
   );
-  if (activeToolIndex !== -1) {
+
+  if (activeToolIndex === -1) {
+    parts.push({
+      type: "dynamic-tool",
+      toolName: chunk.name,
+      state: "done",
+      args: "",
+      output: chunk.content,
+    });
+  } else {
     parts[activeToolIndex].state = "done";
     parts[activeToolIndex].output = chunk.content;
   }
+
   onChunk?.({
     type: "tool-call-result",
-    toolName: chunk.name,
+    toolname: chunk.name,
     result: chunk.content,
   });
 };
