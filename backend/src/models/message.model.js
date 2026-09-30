@@ -84,11 +84,20 @@ const messageSchema = new mongoose.Schema(
       type: [partsSchema],
       default: [],
     },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
 messageSchema.index({ chat: 1, createdAt: 1 });
+
+// Purges soft-deleted messages (deletedAt set) automatically after 30 days.
+// Documents with deletedAt: null are never touched by the TTL monitor,
+// so active messages are immune — only cascaded (deleted) ones expire.
+messageSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
 messageSchema.virtual("hasCitations").get(function () {
   return this.citations.length > 0;

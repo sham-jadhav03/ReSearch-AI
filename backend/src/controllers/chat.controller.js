@@ -98,7 +98,7 @@ export const sendMessage = async (req, res) => {
     }
 
     const contextMessages = buildContext(
-      await messageModel.find({ chat: finalChatId }).select("role content").sort({ createdAt: 1 }).lean()
+      await messageModel.find({ chat: finalChatId, deletedAt: null }).select("role content").sort({ createdAt: 1 }).lean()
     );
 
     setupSSE(res);
@@ -117,15 +117,48 @@ export const sendMessage = async (req, res) => {
   }
 };
 
+const paginationParams = (req, fallbackLimit) => {
+  const parsedLimit = parseInt(req.query.limit, 10);
+  const parsedPage = parseInt(req.query.page, 10);
+  const limit =
+    Number.isInteger(parsedLimit) && parsedLimit > 0
+      ? Math.min(parsedLimit, 100)
+      : fallbackLimit;
+  const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  return { limit, page, isPaged: limit > 0 };
+};
+
 export const getChats = async (req, res) => {
   try {
     const userId = req.user?.id || req.user?._id;
-    const chats = await chatModel
-      .find({ user: userId, deletedAt: null })
-      .sort({ lastMessageAt: -1 })
-      .lean();
+    const { limit, page, isPaged } = paginationParams(req, 0);
+    const filter = { user: userId, deletedAt: null };
 
-    res.status(200).json({ message: "Chats retrieved successfully.", chats });
+    const baseQuery = () =>
+      chatModel.find(filter)
+        .sort({ lastMessageAt: -1, _id: -1 })
+        .select("-user -__v");
+
+    let chats;
+    let total;
+    if (isPaged) {
+      total = await chatModel.countDocuments(filter);
+      chats = await baseQuery()
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+    } else {
+      chats = await baseQuery().lean();
+    }
+
+    res.status(200).json({
+      message: "Chats retrieved successfully.",
+      success: true,
+      chats,
+      ...(isPaged && {
+        pagination: { page, limit, total, hasMore: page * limit < total },
+      }),
+    });
   } catch (err) {
     console.error("getChats error:", err);
     res.status(500).json({ message: "Failed to retrieve chats.", success: false });
@@ -137,14 +170,42 @@ export const getMessages = async (req, res) => {
     const { chatId } = req.params;
     const userId = req.user?.id || req.user?._id;
 
-    const chat = await chatModel.findOne({ _id: chatId, user: userId, deletedAt: null }).lean();
+    const chat = await chatModel
+      .findOne({ _id: chatId, user: userId, deletedAt: null })
+      .select("_id")
+      .lean();
     if (!chat) {
       return res.status(404).json({ message: "Chat not found.", success: false });
     }
 
-    const messages = await messageModel.find({ chat: chatId }).sort({ createdAt: 1 }).lean();
+    const { limit, page, isPaged } = paginationParams(req, 0);
+    const filter = { chat: chatId, deletedAt: null };
 
-    res.status(200).json({ message: "Messages retrieved successfully.", messages });
+    const baseQuery = () =>
+      messageModel.find(filter)
+        .sort({ createdAt: 1, _id: 1 })
+        .select("-__v")
+        .lean({ virtuals: true });
+
+    let messages;
+    let total;
+    if (isPaged) {
+      total = await messageModel.countDocuments(filter);
+      messages = await baseQuery()
+        .skip((page - 1) * limit)
+        .limit(limit);
+    } else {
+      messages = await baseQuery();
+    }
+
+    res.status(200).json({
+      message: "Messages retrieved successfully.",
+      success: true,
+      messages,
+      ...(isPaged && {
+        pagination: { page, limit, total, hasMore: page * limit < total },
+      }),
+    });
   } catch (err) {
     console.error("getMessages error:", err);
     res.status(500).json({ message: "Failed to retrieve messages.", success: false });
@@ -154,21 +215,27 @@ export const getMessages = async (req, res) => {
 export const deleteChat = async (req, res) => {
   try {
     const { chatId } = req.params;
-    console.log(req.params);
-    
     const userId = req.user?.id || req.user?._id;
 
     const chat = await chatModel.findOneAndUpdate(
       { _id: chatId, user: userId, deletedAt: null },
       { $set: { deletedAt: new Date() } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!chat) {
       return res.status(404).json({ message: "Chat not found.", success: false });
     }
 
-    res.status(200).json({ message: "Chat deleted successfully." });
+    // Cascade soft-delete: mark every message of the chat as deleted too.
+    // Without this, "deleted" chats leak their message documents forever.
+    // The TTL index on the message's deletedAt purges them after 30 days.
+    await messageModel.updateMany(
+      { chat: chatId, deletedAt: null },
+      { $set: { deletedAt: new Date() } }
+    );
+
+    res.status(200).json({ message: "Chat deleted successfully.", success: true });
   } catch (err) {
     console.error("deleteChat error:", err);
     res.status(500).json({ message: "Failed to delete chat.", success: false });
