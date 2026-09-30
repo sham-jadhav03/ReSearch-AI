@@ -47,6 +47,7 @@ export const loginValidator = [
     .withMessage("Please provide a valid email"),
 
   body("password")
-    .notEmpty().withMessage("Password is requires"),
+    .notEmpty().withMessage("Password is required")
+    .isLength({ min: 6, max: 72 }).withMessage("Password must be between 6 and 72 characters"),
   validate
 ];

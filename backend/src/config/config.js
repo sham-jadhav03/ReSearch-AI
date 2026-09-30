@@ -57,4 +57,6 @@ export const config = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+  SERVER_URL: process.env.SERVER_URL || "http://localhost:4000",
 };
