@@ -60,7 +60,23 @@
 ### Remaining Section 6 Follow-up
 - A genuine fallback chain requires a configured second model and an SSE restart contract; retrying after streamed output would duplicate text.
 - Full LangChain message metadata and Gemini thought signatures need a dedicated persisted metadata schema before context can safely replay tool-call history.
-- Per-user AI/search quotas, tool timeouts, and SSE backpressure/heartbeats remain separate operational hardening tasks.
+- Per-user AI/search quotas, tool timeouts, and SSE backpressure remain separate operational hardening tasks.
+
+## Completed Work: Section 7 - SSE Wire Protocol
+
+### Fixes Applied
+- The server writes the `start` event as its first response write, so the stream never exposes an empty successful response before the protocol begins.
+- SSE responses now include `Cache-Control: no-transform` and `X-Accel-Buffering: no` to prevent intermediary buffering.
+- A `: ping` comment is emitted every 15 seconds and cleared when the stream completes or disconnects; existing clients correctly ignore comment frames.
+- Stream failures now emit `{ type: "error", code: "AI_STREAM_FAILED", message }`, and the frontend displays that safe message.
+- The `done` event now sends a compact AI-message DTO while citations remain a dedicated field, rather than sending the full Mongoose document and its persisted tool output.
+
+### Protocol Decision
+- Automatic reconnect, `id:`, and `retry:` frames remain intentionally absent. This endpoint streams over POST, and replaying an agent run would duplicate or splice independently generated output. A future resumable design requires persisted pending messages and a separate reconnect contract.
+
+### Files Modified
+1. `backend/src/controllers/chat.controller.js`
+2. `frontend/src/features/chat/hooks/useChat.js`
 
 ---
 
@@ -478,3 +494,33 @@ DELETE /api/chat/delete/:chatId  (authUser, chatIdParamValidator)
 | Message toolCallId field | 5.3 | ✅ FIXED |
 | Message parts size guards | 5.3 | ✅ FIXED |
 | Message service remove messageCount increment | 5.4 | ✅ FIXED |
+
+---
+
+## Auth Troubleshooting Follow-up (2026-10-02)
+
+### User-Visible Issues
+- A failed login returned HTTP 400, but the login form redirected to `/` anyway and did not show the backend's rejection message.
+- A successful registration generated an email-verification JWT, but did not return a usable link in its JSON response. The user was testing registration with Postman and the local mail fallback does not deliver email.
+- Retrying registration for the same username/email hit the duplicate-account check before generating another verification token, returning only a generic 400 response.
+
+### Changes Applied
+1. **`frontend/src/features/auth/hooks/useAuth.js`**
+   - `handleLogin` clears a stale auth error before sending the request.
+   - Returns `true` after a successful login and `false` after a rejected request, while preserving the backend error message in auth state.
+2. **`frontend/src/features/auth/pages/Login.jsx`**
+   - Renders the auth error as an alert.
+   - Redirects to `/` only when `handleLogin` succeeds.
+3. **`backend/src/controllers/auth.controller.js`**
+   - Adds `verificationUrl` to successful registration responses when `NODE_ENV` is not `production`, allowing local Postman verification without exposing the link in production responses.
+   - For an existing unverified account, the non-production duplicate path now returns HTTP 409 with a newly signed, one-hour `verificationUrl`. Production retains the generic duplicate-registration response.
+
+### Postman Verification Flow
+- Register a new account, or retry registration for an existing unverified account in a non-production environment.
+- Copy `verificationUrl` from the JSON response and take the token from its `token` query parameter.
+- POST to `/api/auth/verify-email` with JSON body `{ "token": "<token>" }`. The token remains subject to the existing `EMAIL_SECRET`, purpose claim, and one-hour expiry checks.
+- The verification URL is returned by the API; the frontend registration page has not been changed to display it.
+
+### Validation
+- `node --check src/controllers/auth.controller.js` from `backend/` passed after the controller changes.
+- `npm run build` from `frontend/` passed after the login form changes. Vite reported its existing large-chunk warning.

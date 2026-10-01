@@ -9,6 +9,7 @@ const Login = () => {
 
   const user = useSelector((state) => state.auth.user);
   const loading = useSelector((state) => state.auth.loading);
+  const error = useSelector((state) => state.auth.error);
 
   const { handleLogin } = useAuth();
 
@@ -22,8 +23,8 @@ const Login = () => {
       password,
     };
 
-    await handleLogin(payload);
-    navigate("/");
+    const success = await handleLogin(payload);
+    if (success) navigate("/");
   };
 
   if (!loading && user) {
@@ -41,6 +42,11 @@ const Login = () => {
             </p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              {error && (
+                <p role="alert" className="rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-200">
+                  {error}
+                </p>
+              )}
               <div>
                 <label
                   htmlFor="email"

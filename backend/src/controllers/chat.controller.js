@@ -16,12 +16,32 @@ const writeEvent = (res, event) => {
   }
 };
 
-const setupSSE = (res) => {
+const HEARTBEAT_INTERVAL_MS = 15_000;
+
+const setupSSE = (res, startEvent) => {
   res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
-  res.flushHeaders();
+  res.setHeader("X-Accel-Buffering", "no");
+
+  // The first write commits the headers and prevents an empty 200 response.
+  writeEvent(res, startEvent);
+
+  const heartbeat = setInterval(() => {
+    if (!res.writableEnded && !res.destroyed) res.write(": ping\n\n");
+  }, HEARTBEAT_INTERVAL_MS);
+  heartbeat.unref?.();
+
+  return () => clearInterval(heartbeat);
 };
+
+const streamMessage = (message) => ({
+  id: message._id.toString(),
+  chat: message.chat.toString(),
+  content: message.content,
+  role: message.role,
+  createdAt: message.createdAt,
+});
 
 /**
  * Resolves which chat this message belongs to. If `chatId` is provided,
@@ -63,7 +83,7 @@ const streamAndPersist = async ({ res, finalChatId, contextMessages, signal }) =
 
   writeEvent(res, {
     type: "done",
-    aiMessage,
+    aiMessage: streamMessage(aiMessage),
     citations,
     hasCitations: citations.length > 0,
   });
@@ -90,6 +110,7 @@ export const sendMessage = async (req, res) => {
 
   req.on("close", abortForRequestClose);
   res.on("close", abortForDisconnect);
+  let stopHeartbeat = () => {};
 
   try {
     const { finalChatId, title, isNewChat } = await resolveChat({
@@ -107,8 +128,11 @@ export const sendMessage = async (req, res) => {
       await messageModel.find({ chat: finalChatId, deletedAt: null }).select("role content").sort({ createdAt: 1 }).lean()
     );
 
-    setupSSE(res);
-    writeEvent(res, { type: "start", chatId: finalChatId, title: isNewChat ? title : undefined });
+    stopHeartbeat = setupSSE(res, {
+      type: "start",
+      chatId: finalChatId,
+      title: isNewChat ? title : undefined,
+    });
 
     await streamAndPersist({
       res,
@@ -125,9 +149,14 @@ export const sendMessage = async (req, res) => {
       const status = err.status || 500;
       return res.status(status).json({ message: err.message || "Failed to process message.", success: false });
     }
-    writeEvent(res, { type: "error" });
+    writeEvent(res, {
+      type: "error",
+      code: "AI_STREAM_FAILED",
+      message: "The AI response could not be completed.",
+    });
     res.end();
   } finally {
+    stopHeartbeat();
     req.off("close", abortForRequestClose);
     res.off("close", abortForDisconnect);
   }

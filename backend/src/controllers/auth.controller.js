@@ -18,6 +18,27 @@ export const register = async (req, res) => {
     });
 
     if (isUserAlreadyExist) {
+      if (
+        process.env.NODE_ENV !== "production" &&
+        !isUserAlreadyExist.verified
+      ) {
+        const emailVerificationToken = jwt.sign(
+          {
+            email: isUserAlreadyExist.email,
+            purpose: "email_verification",
+          },
+          config.EMAIL_SECRET,
+          { expiresIn: "1h" },
+        );
+
+        return res.status(409).json({
+          message: "Account already exists and needs email verification.",
+          success: false,
+          verified: false,
+          verificationUrl: `${config.SERVER_URL}/api/auth/verify-email?token=${emailVerificationToken}`,
+        });
+      }
+
       return res.status(400).json({
         message: "Registration failed.",
         success: false,
@@ -55,7 +76,7 @@ export const register = async (req, res) => {
       console.warn("Verification email could not be sent:", error.message);
     }
 
-    res.status(201).json({
+    const response = {
       message: "User registered successfully. Please check your email to verify your account.",
       success: true,
       verified: false,
@@ -64,7 +85,13 @@ export const register = async (req, res) => {
         username: user.username,
         email: user.email,
       },
-    });
+    };
+
+    if (process.env.NODE_ENV !== "production") {
+      response.verificationUrl = `${config.SERVER_URL}/api/auth/verify-email?token=${emailVerificationToken}`;
+    }
+
+    res.status(201).json(response);
   } catch (error) {
     console.error("Registration error:", error);
     if (error.code === 11000) {

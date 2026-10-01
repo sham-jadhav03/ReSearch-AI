@@ -220,7 +220,11 @@ export const useChat = () => {
               }
 
               if (parsed.type === "error") {
-                throw new Error("AI Stream Error");
+                const error = new Error(
+                  parsed.message || "The AI response could not be completed.",
+                );
+                error.code = parsed.code;
+                throw error;
               }
             }
         }
