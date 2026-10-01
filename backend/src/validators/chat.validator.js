@@ -13,7 +13,6 @@ const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 export const sendMessageValidator = [
   body("message")
-    .if(body("resumeFromIndex").not().exists())
     .trim()
     .notEmpty()
     .withMessage("Message content is required.")
@@ -28,11 +27,6 @@ export const sendMessageValidator = [
     .optional({ nullable: true })
     .custom(isValidObjectId)
     .withMessage("Invalid chat id."),
-
-  body("resumeFromIndex")
-    .optional({ nullable: true })
-    .isInt({ min: 0 })
-    .withMessage("resumeFromIndex must be a non-negative integer."),
 
   validate,
 ];

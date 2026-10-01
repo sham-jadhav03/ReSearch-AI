@@ -8,16 +8,13 @@ const api = axios.create({
   withCredentials: true,
 });
 
-export const sendMessage = async ({ message, chatId, resumeFromIndex }) => {
+export const sendMessage = async ({ message, chatId }) => {
   const response = await fetch(`${API_BASE_URL}/api/chat/message`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, chat: chatId, resumeFromIndex }),
+    body: JSON.stringify({ message, chat: chatId }),
   });
-
-  console.log(response);
-  
 
   if (!response.ok) {
     let errorMessage = `Request failed with status ${response.status}`;

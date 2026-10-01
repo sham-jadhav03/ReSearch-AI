@@ -77,7 +77,7 @@ const messageSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
       maxlength: 100000, // Size guard: prevents unbounded message storage
     },

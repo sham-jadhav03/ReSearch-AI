@@ -11,7 +11,9 @@ class ChatAccessError extends Error {
 }
 
 const writeEvent = (res, event) => {
-  res.write(`data: ${JSON.stringify(event)}\n\n`);
+  if (!res.writableEnded && !res.destroyed) {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  }
 };
 
 const setupSSE = (res) => {
@@ -27,44 +29,30 @@ const setupSSE = (res) => {
  * user could previously read/write into another user's chat by guessing
  * or reusing an ID. If absent, a new chat is created with a generated title.
  */
-const resolveChat = async ({ chatId, userId, message }) => {
+const resolveChat = async ({ chatId, userId, message, signal }) => {
+  if (signal?.aborted) throw signal.reason;
+
   if (chatId) {
     const chat = await chatModel.findOne({ _id: chatId, user: userId, deletedAt: null });
     if (!chat) throw new ChatAccessError("Chat not found or access denied.");
     return { finalChatId: chat._id.toString(), title: null, isNewChat: false };
   }
 
-  const title = await generateChatTitle(message);
+  const title = await generateChatTitle(message, signal);
+  if (signal?.aborted) throw signal.reason;
+
   const chat = await chatModel.create({ user: userId, title });
   return { finalChatId: chat._id.toString(), title, isNewChat: true };
 };
 
-/**
- * Streams the agent's response over SSE, re-applying the resume-skip
- * logic when reconnecting mid-generation, then persists the finished
- * message. Note: on resume, the agent still re-runs from scratch —
- * this only avoids re-sending already-seen text to the client, it does
- * not avoid re-running tool calls. Flagged as a known limitation, not
- * fixed here (would require the pub/sub redesign discussed earlier).
- */
-const streamAndPersist = async ({ res, finalChatId, contextMessages, resumeFromIndex }) => {
-  let sentTextLength = 0;
-
+/** Streams one agent run and persists its completed response. */
+const streamAndPersist = async ({ res, finalChatId, contextMessages, signal }) => {
   const onChunk = (event) => {
-    if (resumeFromIndex && event.type === "text-delta") {
-      const prevLength = sentTextLength;
-      sentTextLength += event.delta.length;
-
-      if (sentTextLength <= resumeFromIndex) return;
-      if (prevLength < resumeFromIndex) {
-        writeEvent(res, { ...event, delta: event.delta.slice(resumeFromIndex - prevLength) });
-        return;
-      }
-    }
-    writeEvent(res, event);
+    if (!signal.aborted) writeEvent(res, event);
   };
 
-  const { finalMessage, parts, citations } = await generateResponse(contextMessages, onChunk);
+  const { finalMessage, parts, citations } = await generateResponse(contextMessages, onChunk, signal);
+  if (signal.aborted) return;
 
   const aiMessage = await createAiMessage({
     chatId: finalChatId,
@@ -83,19 +71,37 @@ const streamAndPersist = async ({ res, finalChatId, contextMessages, resumeFromI
 };
 
 export const sendMessage = async (req, res) => {
-  const { message, chat: chatId, resumeFromIndex } = req.body;
+  const { message, chat: chatId } = req.body;
   const userId = req.user.id;
 
-  if (!resumeFromIndex && (!message || typeof message !== "string" || !message.trim())) {
+  if (!message || typeof message !== "string" || !message.trim()) {
     return res.status(400).json({ message: "Message content is required.", success: false });
   }
 
-  try {
-    const { finalChatId, title, isNewChat } = await resolveChat({ chatId, userId, message });
-
-    if (!resumeFromIndex) {
-      await createUserMessage({ chatId: finalChatId, content: message });
+  const abortController = new AbortController();
+  const abortForDisconnect = () => {
+    if (!res.writableEnded && !abortController.signal.aborted) {
+      abortController.abort();
     }
+  };
+  const abortForRequestClose = () => {
+    if (req.aborted) abortForDisconnect();
+  };
+
+  req.on("close", abortForRequestClose);
+  res.on("close", abortForDisconnect);
+
+  try {
+    const { finalChatId, title, isNewChat } = await resolveChat({
+      chatId,
+      userId,
+      message,
+      signal: abortController.signal,
+    });
+
+    if (abortController.signal.aborted) return;
+
+    await createUserMessage({ chatId: finalChatId, content: message });
 
     const contextMessages = buildContext(
       await messageModel.find({ chat: finalChatId, deletedAt: null }).select("role content").sort({ createdAt: 1 }).lean()
@@ -104,8 +110,15 @@ export const sendMessage = async (req, res) => {
     setupSSE(res);
     writeEvent(res, { type: "start", chatId: finalChatId, title: isNewChat ? title : undefined });
 
-    await streamAndPersist({ res, finalChatId, contextMessages, resumeFromIndex });
+    await streamAndPersist({
+      res,
+      finalChatId,
+      contextMessages,
+      signal: abortController.signal,
+    });
   } catch (err) {
+    if (abortController.signal.aborted) return;
+
     console.error("sendMessage failed:", err);
 
     if (!res.headersSent) {
@@ -114,6 +127,9 @@ export const sendMessage = async (req, res) => {
     }
     writeEvent(res, { type: "error" });
     res.end();
+  } finally {
+    req.off("close", abortForRequestClose);
+    res.off("close", abortForDisconnect);
   }
 };
 

@@ -28,8 +28,6 @@ export const useChat = () => {
     async ({ message, chatId }) => {
       let resolvedChatId = chatId;
       let isDone = false;
-      let retryCount = 0;
-      const MAX_RETRIES = 3;
 
       dispatch(setError(null));
       dispatch(setLoading(true));
@@ -37,18 +35,8 @@ export const useChat = () => {
       setStreamingParts([]);
       setIsStreaming(false);
 
-      while (!isDone && retryCount < MAX_RETRIES) {
-        try {
-          const receivedTextLength = streamingPartsRef.current
-            .filter((p) => p.type === "text")
-            .reduce((acc, p) => acc + p.text.length, 0);
-
-          const data = await sendMessage({
-            message,
-            chatId: resolvedChatId,
-            resumeFromIndex:
-              receivedTextLength > 0 ? receivedTextLength : undefined,
-          });
+      try {
+        const data = await sendMessage({ message, chatId: resolvedChatId });
 
           const reader = data.body.getReader();
           const decoder = new TextDecoder();
@@ -79,7 +67,7 @@ export const useChat = () => {
               if (parsed.type === "start") {
                 resolvedChatId = resolvedChatId || parsed.chatId;
 
-                if (!chatId && receivedTextLength === 0) {
+                if (!chatId) {
                   dispatch(
                     createNewChat({
                       chatId: resolvedChatId,
@@ -123,12 +111,14 @@ export const useChat = () => {
               if (parsed.type === "tool-call-start") {
                 const exists = streamingPartsRef.current.some(
                   (p) =>
-                    p.type === "dynamic-tool" && p.toolName === parsed.toolName,
+                    p.type === "dynamic-tool" &&
+                    p.toolCallId === parsed.toolCallId,
                 );
                 if (!exists) {
                   streamingPartsRef.current.push({
                     type: "dynamic-tool",
                     toolName: parsed.toolName,
+                    toolCallId: parsed.toolCallId,
                     state: "streaming",
                     args: "",
                     output: null,
@@ -144,13 +134,22 @@ export const useChat = () => {
 
               if (parsed.type === "tool-call-delta") {
                 const partsArray = streamingPartsRef.current;
-                const lastPart = partsArray[partsArray.length - 1];
+                const activeToolIndex = partsArray.findLastIndex(
+                  (p) =>
+                    p.type === "dynamic-tool" &&
+                    p.toolCallId === parsed.toolCallId &&
+                    p.state === "streaming",
+                );
+                const lastPart = partsArray[activeToolIndex];
                 if (
                   lastPart &&
                   lastPart.type === "dynamic-tool" &&
                   lastPart.state === "streaming"
                 ) {
-                  lastPart.args = (lastPart.args || "") + parsed.args;
+                  partsArray[activeToolIndex] = {
+                    ...lastPart,
+                    args: (lastPart.args || "") + parsed.args,
+                  };
                 }
                 if (!frame) {
                   frame = requestAnimationFrame(() => {
@@ -165,7 +164,7 @@ export const useChat = () => {
                 const activeToolIndex = partsArray.findLastIndex(
                   (p) =>
                     p.type === "dynamic-tool" &&
-                    p.toolName === parsed.toolName &&
+                    p.toolCallId === parsed.toolCallId &&
                     p.state === "streaming",
                 );
                 if (activeToolIndex !== -1) {
@@ -178,13 +177,14 @@ export const useChat = () => {
                   const alreadyDone = partsArray.some(
                     (p) =>
                       p.type === "dynamic-tool" &&
-                      p.toolName === parsed.toolName &&
+                      p.toolCallId === parsed.toolCallId &&
                       p.state === "done",
                   );
                   if (!alreadyDone) {
                     partsArray.push({
                       type: "dynamic-tool",
                       toolName: parsed.toolName,
+                      toolCallId: parsed.toolCallId,
                       state: "done",
                       output: parsed.result,
                     });
@@ -223,32 +223,16 @@ export const useChat = () => {
                 throw new Error("AI Stream Error");
               }
             }
-          }
-        } catch (error) {
-          console.error("SSE Connection failed, retrying...", error);
-
-          if (error.status === 429) {
-            setIsStreaming(false);
-            dispatch(
-              setError(
-                error.message || "Too many messages sent. Please slow down.",
-              ),
-            );
-            dispatch(setLoading(false));
-            break; // don't burn retries against a hard rate limit
-          }
-
-          retryCount++;
-          if (retryCount >= MAX_RETRIES) {
-            setIsStreaming(false);
-            dispatch(setError("Connection lost. Please try again."));
-            dispatch(setLoading(false));
-            break;
-          }
-          await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * retryCount),
-          );
         }
+
+        if (!isDone) {
+          throw new Error("The response stream ended before completion.");
+        }
+      } catch (error) {
+        console.error("SSE connection failed:", error);
+        setIsStreaming(false);
+        dispatch(setError(error.message || "Connection lost. Please try again."));
+        dispatch(setLoading(false));
       }
     },
     [dispatch],

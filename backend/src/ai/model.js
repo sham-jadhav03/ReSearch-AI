@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { config } from "../config/config.js";
 import { ChatMistralAI } from "@langchain/mistralai";
-import { tavily as Tavily } from "@tavily/core";
+import { tavily as createTavily } from "@tavily/core";
 
 const Model_REGISTRY = {
   "gemini-3.5-flash-lite": {
@@ -34,6 +34,6 @@ export const mistrilModel = new ChatMistralAI({
   apiKey: config.MISTRAL_API_KEY,
 });
 
-export const tavily = Tavily({
+export const tavily = createTavily({
   apiKey: config.TAVILY_API_KEY,
 });

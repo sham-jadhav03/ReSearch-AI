@@ -8,6 +8,7 @@ const textPartSchema = z.object({
 const dynamicToolPartSchema = z.object({
   type: z.literal("dynamic-tool"),
   toolName: z.string().min(1),
+  toolCallId: z.string().min(1).optional(),
   state: z.enum(["streaming", "done"]),
   args: z.string().default(""),
   output: z.unknown().nullable().default(null),
@@ -26,7 +27,7 @@ const citationSchema = z.object({
 
 export const createMessageSchema = z.object({
   chat: z.string().min(1),
-  content: z.string().min(1),
+  content: z.string(),
   role: z.enum(["user", "ai"]),
   citations: z.array(citationSchema).default([]),
   parts: z.array(partSchema).default([]),
