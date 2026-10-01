@@ -11,15 +11,11 @@ const chatSchema = new mongoose.Schema(
       type: String,
       default: "New Chat",
       trim: true,
+      maxlength: [200, "Title must be at most 200 characters"],
     },
     lastMessageAt: {
       type: Date,
       default: Date.now,
-    },
-    messageCount: {
-      type: Number,
-      default: 0,
-      min: 0,
     },
     deletedAt: {
       type: Date,
@@ -30,6 +26,7 @@ const chatSchema = new mongoose.Schema(
 );
 
 chatSchema.index({ user: 1, lastMessageAt: -1 });
+chatSchema.index({ deletedAt: 1 });
 
 const chatModel = mongoose.model("Chat", chatSchema);
 

@@ -13,6 +13,7 @@ const partsSchema = new mongoose.Schema(
       required: function () {
         return this.type === "text";
       },
+      maxlength: 100000, // Size guard to prevent 16MB document limit issues
     },
 
     toolName: {
@@ -29,9 +30,15 @@ const partsSchema = new mongoose.Schema(
         return this.type === "dynamic-tool";
       },
     },
+    // toolCallId is used to disambiguate parallel tool calls (§6.5 fix)
+    toolCallId: {
+      type: String,
+      required: false,
+    },
     args: {
       type: String,
       default: "",
+      maxlength: 10000,
     },
     output: {
       type: mongoose.Schema.Types.Mixed,
@@ -50,10 +57,12 @@ const citationSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      maxlength: 500,
     },
     url: {
       type: String,
       required: true,
+      maxlength: 2048,
     },
   },
   { _id: false },
@@ -70,6 +79,7 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      maxlength: 100000, // Size guard: prevents unbounded message storage
     },
     role: {
       type: String,

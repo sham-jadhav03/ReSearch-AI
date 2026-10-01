@@ -20,6 +20,7 @@ export const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: [6,"Password must be at least 6 characters long"],
+      maxlength: [72,"Password must be at most 72 characters long"],
     },
     verified: {
       type: Boolean,
@@ -37,6 +38,8 @@ userSchema.pre("save", async function () {
 userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
+userSchema.index({ verified: 1 });
 
 const userModel = mongoose.model("User", userSchema);
 
