@@ -524,3 +524,40 @@ DELETE /api/chat/delete/:chatId  (authUser, chatIdParamValidator)
 ### Validation
 - `node --check src/controllers/auth.controller.js` from `backend/` passed after the controller changes.
 - `npm run build` from `frontend/` passed after the login form changes. Vite reported its existing large-chunk warning.
+
+---
+
+## Backend Audit: Remaining Work (2026-10-02, Read-Only)
+
+No application code was changed and no implementation was started for this audit. Findings were cross-checked against the current backend entry point, Express app, auth/chat routes and controllers, mail service, rate limiters, AI service, and the previous audit/work log.
+
+### Fix First: Security and Production Readiness
+1. **Verification tokens are written to request logs.** `backend/src/app.js` uses `morgan("dev")`, which logs the request URL; `GET /api/auth/verify-email?token=...` places the one-hour bearer token in that URL. A party with log access could use the token in the verification POST. Redact query strings/tokens or otherwise prevent the secret from entering logs.
+2. **The server accepts traffic before MongoDB is ready.** `backend/server.js` calls `connectDB()` without awaiting it, then immediately listens. A connection failure is also not handled at the entry point. Await database readiness before listening and fail startup cleanly if it cannot connect.
+3. **Deployment CORS is fixed to localhost.** `backend/src/app.js` allows only `http://localhost:5173` even though `CLIENT_URL` is configured. Deployed browser clients on another origin will fail credentialed requests. Configure an explicit allowed-origin list from environment/config.
+4. **Production behavior depends on an implicit `NODE_ENV`.** Auth cookies consider production only when `NODE_ENV === "production"`; registration exposes `verificationUrl` whenever it is not production. A deployed environment with `NODE_ENV` unset gets development cookie settings and exposes verification links in registration responses. Require/validate deployment mode or use a separate explicit development-only setting.
+
+### Fix Next: Account Recovery and API Contracts
+5. **Users have no production verification recovery path.** Registration can succeed even when email delivery fails. `backend/src/services/mail.service.js` falls back to `streamTransport`, which does not deliver email, while registration still returns success. There is no resend-verification route; duplicate registration is rejected in production, so an unverified user can be stranded. Add a rate-limited resend flow and make delivery status/recovery explicit without returning tokens in production responses.
+6. **Logout is called by the frontend but is not routed.** `backend/src/features/auth/services/auth.api.js` calls `POST /api/auth/logout`, but `backend/src/routes/auth.routes.js` has no logout route. The request 404s and the HttpOnly cookie is not cleared server-side. Implement logout with cookie-clearing attributes matching login.
+7. **Rate-limit responses have a nested `message` object.** Both auth and chat limiter configurations wrap `{ message, success }` inside another `message`. Clients expecting `response.data.message` receive an object; rendering that object as React text can throw. Return a consistent flat JSON error envelope.
+8. **There is no shared JSON 404/error handler.** `backend/src/app.js` ends after mounting routers. Async failures not handled inside a controller and unknown API paths use Express's default response instead of the API's JSON contract. Add centralized JSON 404/error handling, with safe production messages.
+
+### Reliability and Cost Controls
+9. **A failed AI generation can leave a user-only turn persisted.** `backend/src/controllers/chat.controller.js` stores the user message before the AI run finishes. If generation or persistence fails, chat history contains an unanswered turn. Define a pending/failed message state or a deliberate cleanup/retry contract.
+10. **Paid AI/search calls have no explicit operation deadline or spend quota.** The per-user message rate limit bounds request frequency, not total model/search cost or the duration of a single request. Add provider/tool timeouts and per-user/global usage limits before exposing the service broadly.
+11. **Rate limits are process-local.** The configured express-rate-limit stores are in-memory; multiple backend instances will each enforce separate limits. This is acceptable for a single local instance, but production multi-instance deployments need a shared store. Also configure `trust proxy` deliberately when deployed behind a trusted reverse proxy so IP-based limits use the real client IP.
+12. **Backend test command is a placeholder.** `backend/package.json` has no real test suite (`npm test` exits with “no test specified”). Add integration coverage for registration/verification/login/logout, limiter response shape, startup readiness, and chat failure persistence before relying on these contracts.
+
+### Already Addressed; Do Not Reopen From the Older Analysis
+- The `deleteAt`/`deletedAt` mismatch, soft-delete cascade/TTL, pagination/projections, stable message ordering, and citation virtual handling are recorded as fixed in this file; current chat controller reflects the read-path changes.
+- SSE retry duplication/resume splicing and disconnect cancellation are recorded as fixed; current chat controller has abort handling, heartbeats, and safe SSE error frames.
+- Tool-call IDs, matching, tool output validation, citation deduplication, and prompt treatment of tool output are recorded as fixed; current AI service uses call IDs and independently validates/deduplicates sources.
+- Verification token secret/purpose/expiry and GET-then-POST confirmation are already fixed. The open verification findings here concern URL logging, delivery/recovery, and environment configuration, not the old token-confusion bypass.
+
+### Suggested Order
+1. Stop verification-token logging and make production mode explicit.
+2. Await MongoDB before listening; add JSON error handling.
+3. Fix deployed CORS and implement logout plus verification resend/recovery.
+4. Flatten rate-limit responses and decide the failed-AI-turn persistence contract.
+5. Add AI/search deadlines, usage limits, shared production rate limiting, and endpoint integration tests.
