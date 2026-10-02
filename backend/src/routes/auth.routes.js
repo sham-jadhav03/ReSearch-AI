@@ -2,7 +2,9 @@ import express from "express";
 import {
   getMe,
   login,
+  logout,
   register,
+  resendVerification,
   getVerifyEmailPage,
   verifyEmail,
 } from "../controllers/auth.controller.js";
@@ -14,6 +16,7 @@ import { authUser } from "../middlewares/auth.middleware.js";
 import {
   registerLimiter,
   loginLimiter,
+  resendVerificationLimiter,
 } from "../middlewares/authRateLimit.middleware.js";
 
 const router = express.Router();
@@ -56,5 +59,20 @@ router.get("/verify-email", getVerifyEmailPage);
  * @body { token }
  */
 router.post("/verify-email", verifyEmail);
+
+/**
+ * @route POST /api/auth/logout
+ * @desc Logout user and clear cookie
+ * @access Public
+ */
+router.post("/logout", logout);
+
+/**
+ * @route POST /api/auth/resend-verification
+ * @desc Resend email verification
+ * @access Public
+ * @body { email }
+ */
+router.post("/resend-verification", resendVerificationLimiter, resendVerification);
 
 export default router;

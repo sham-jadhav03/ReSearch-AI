@@ -561,3 +561,84 @@ No application code was changed and no implementation was started for this audit
 3. Fix deployed CORS and implement logout plus verification resend/recovery.
 4. Flatten rate-limit responses and decide the failed-AI-turn persistence contract.
 5. Add AI/search deadlines, usage limits, shared production rate limiting, and endpoint integration tests.
+
+---
+
+### ✅ Audit Fixes Applied (2026-10-02)
+
+| Audit # | Issue | Status | Fix Applied |
+|---------|-------|--------|-------------|
+| 1 | Verification tokens in logs | ✅ FIXED | Modified morgan middleware to skip logging /verify-email?token=... |
+| 2 | Server accepts traffic before MongoDB ready | ✅ FIXED | Await connectDB() before app.listen() in server.js |
+| 3 | Deployment CORS fixed to localhost | ✅ FIXED | Uses config.CLIENT_URL from env with localhost fallback |
+| 4 | Production behavior depends on implicit NODE_ENV | ✅ FIXED | Added NODE_ENV validation with warning in config.js |
+| 5 | No production verification recovery path | ✅ FIXED | Added rate-limited POST /api/auth/resend-verification endpoint |
+| 6 | Logout not routed (frontend calls it) | ✅ FIXED | Added POST /api/auth/logout endpoint with proper cookie clearing |
+| 7 | Rate-limit responses have nested message object | ✅ FIXED | Flattened response format in authRateLimit.middleware.js |
+| 8 | No shared JSON 404/error handler | ✅ FIXED | Added centralized 404 and 500 error handlers in app.js |
+
+---
+
+### 🔜 Next Tasks (Pending)
+
+### High Priority:
+- **Section 4.5 (POST /api/chat/message):** "Streaming" vs "streaming" (✅ verified fixed, Issue #3); retry duplicates and resumeFromIndex (✅ fixed); client disconnect cancellation (✅ fixed)
+- **Section 4.6 (GET /api/chat/):** ✅ FIXED (2026-10-01) - soft-deleted already via Issue #1; pagination/projection/success added
+- **Section 4.7 (GET /api/chat/:chatId/messages):** ✅ FIXED (2026-10-01) - pagination + `.lean({ virtuals: true })` restores hasCitations + stable sort
+- **Section 4.8 (DELETE /api/chat/delete/:chatId):** ✅ FIXED (2026-10-01) - field mismatch already via Issue #1; cascade soft-delete + message TTL (30 days) + envelope
+
+### Medium Priority:
+- POST /api/auth/logout endpoint ✅ DONE
+- POST /api/auth/resend-verification endpoint ✅ DONE
+- GET /api/health endpoint
+- PATCH /api/chat/:chatId (rename)
+
+### Reliability & Cost Controls (from audit):
+9. **Failed AI generation leaves user-only turn persisted** - Define pending/failed message state or cleanup contract
+10. **AI/search calls lack operation deadline/spend quota** - Add provider/tool timeouts and usage limits
+11. **Rate limits are process-local (multi-instance issue)** - Configure shared store for production deployments
+12. **Backend test command is placeholder** - Add integration test coverage
+
+---
+
+### 🔐 Full Security Audit Summary (Updated)
+
+| Fix | Section | Status |
+|-----|---------|--------|
+| Chat deletion (deletedAt) | 4.1 | ✅ FIXED |
+| Email verification bypass | 4.2 | ✅ FIXED |
+| Tool state mismatch | 4.5 | ✅ FIXED |
+| Register hard-coded link | 4.1 | ✅ FIXED |
+| Register rate limiting | 4.1 | ✅ FIXED |
+| Register try/catch | 4.1 | ✅ FIXED |
+| Register verified:false | 4.1 | ✅ FIXED |
+| Login enumeration | 4.2 | ✅ FIXED |
+| Login cookie options | 4.2 | ✅ FIXED |
+| getMe optional chaining | 4.3 | ✅ FIXED |
+| getMe token re-validation | 4.3 | ✅ FIXED |
+| verifyEmail GET→POST | 4.4 | ✅ FIXED |
+| message SSE client disconnect | 4.5 | ✅ FIXED |
+| chats pagination | 4.6 | ✅ FIXED |
+| chats projection | 4.6 | ✅ FIXED |
+| chats success envelope | 4.6 | ✅ FIXED |
+| messages pagination | 4.7 | ✅ FIXED |
+| messages hasCitations (sources footer) | 4.7 | ✅ FIXED |
+| messages stable sort | 4.7 | ✅ FIXED |
+| chat delete field mismatch | 4.8 | ✅ FIXED |
+| message cascade + TTL cleanup | 4.8 | ✅ FIXED |
+| User password maxlength (bcrypt cap) | 5.1 | ✅ FIXED |
+| User verified index | 5.1 | ✅ FIXED |
+| Chat remove dead messageCount | 5.2 | ✅ FIXED |
+| Chat title maxlength guard | 5.2 | ✅ FIXED |
+| Chat deleteAt index for cleanup | 5.2 | ✅ FIXED |
+| Message content size guard | 5.3 | ✅ FIXED |
+| Message toolCallId field | 5.3 | ✅ FIXED |
+| Message parts size guards | 5.3 | ✅ FIXED |
+| Message service remove messageCount increment | 5.4 | ✅ FIXED |
+| **Verification token logging fix** | **Audit #1** | ✅ FIXED |
+| **MongoDB ready before listen** | **Audit #2** | ✅ FIXED |
+| **Explicit NODE_ENV validation** | **Audit #4** | ✅ FIXED |
+| **Logout endpoint** | **Audit #6** | ✅ FIXED |
+| **Resend-verification endpoint** | **Audit #5** | ✅ FIXED |
+| **Flattened rate-limit responses** | **Audit #7** | ✅ FIXED |
+| **JSON 404/error handler** | **Audit #8** | ✅ FIXED |

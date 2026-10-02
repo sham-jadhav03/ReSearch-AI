@@ -9,10 +9,8 @@ export const registerLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    message: {
-      message: "Too many registration attempts. Please try again later.",
-      success: false,
-    },
+    message: "Too many registration attempts. Please try again later.",
+    success: false,
   },
 });
 
@@ -26,9 +24,22 @@ export const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    message: {
-      message: "Too many login attempts. Please try again later.",
-      success: false,
-    },
+    message: "Too many login attempts. Please try again later.",
+    success: false,
+  },
+});
+
+/**
+ * @desc Rate limit for resend-verification (max 3 attempts per minute)
+ */
+export const resendVerificationLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 3,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many verification email requests. Please try again later.",
+    success: false,
   },
 });

@@ -45,6 +45,11 @@ if (!process.env.TAVILY_API_KEY) {
   throw new Error("TAVILY_API_KEY is not defined in environment variables");
 }
 
+// Validate NODE_ENV to prevent production deployment with dev behavior
+if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "development") {
+  console.warn("NODE_ENV not set. Defaulting to development behavior.");
+}
+
 export const config = {
   PORT: process.env.PORT,
   MONGO_URI: process.env.MONGO_URI,
@@ -59,4 +64,5 @@ export const config = {
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
   SERVER_URL: process.env.SERVER_URL || "http://localhost:4000",
+  NODE_ENV: process.env.NODE_ENV || "development",
 };

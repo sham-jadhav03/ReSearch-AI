@@ -333,3 +333,85 @@ export const verifyEmail = async (req, res) => {
 
   return res.send(html);
 };
+
+/**
+ * @desc Logout user and clear cookie
+ * @route POST /api/auth/logout
+ * @access Public
+ */
+export const logout = async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+
+  res.status(200).json({
+    message: "Logged out successfully",
+    success: true,
+  });
+};
+
+/**
+ * @desc Resend email verification
+ * @route POST /api/auth/resend-verification
+ * @access Public
+ */
+export const resendVerification = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      message: "Email is required.",
+      success: false,
+    });
+  }
+
+  const user = await userModel.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({
+      message: "User not found.",
+      success: false,
+    });
+  }
+
+  if (user.verified) {
+    return res.status(400).json({
+      message: "Email is already verified.",
+      success: false,
+    });
+  }
+
+  try {
+    const emailVerificationToken = jwt.sign(
+      {
+        email: user.email,
+        purpose: "email_verification",
+      },
+      config.EMAIL_SECRET,
+      { expiresIn: "1h" },
+    );
+
+    await sendEmail({
+      to: user.email,
+      subject: "Verify your ResearchAI email",
+      html: `<h1>Welcome to ResearchAI!</h1>
+              <p>Please verify your email address by clicking the link below:</p>
+              <a href="${config.SERVER_URL}/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
+              <p>If you did not create an account, please ignore this email.</p>
+              `,
+    });
+
+    res.status(200).json({
+      message: "Verification email sent. Please check your inbox.",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    res.status(500).json({
+      message: "Internal server error.",
+      success: false,
+    });
+  }
+};
