@@ -2,9 +2,19 @@ import express from "express";
 import cookieParser from 'cookie-parser';
 import cors from "cors";
 import morgan from "morgan";
+import helmet from "helmet";
+
+import authRouter from "./routes/auth.routes.js";
+import chatRouter from "./routes/chat.routes.js";
+import healthRouter from "./routes/health.routes.js";
+import { config } from "./config/config.js";
 
 const app = express();
 
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false,
+}));
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
@@ -21,6 +31,10 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE"],
   }),
 );
+
+app.use("/api/auth", authRouter);
+app.use("/api/chat", chatRouter);
+app.use("/api", healthRouter);
 
 // Centralized JSON 404 handler for API paths not matched by routers
 app.use((req, res) => {
@@ -40,12 +54,5 @@ app.use((err, req, res, next) => {
     err: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
-
-import authRouter from "./routes/auth.routes.js";
-import chatRouter from "./routes/chat.routes.js";
-import { config } from "./config/config.js";
-
-app.use("/api/auth", authRouter);
-app.use("/api/chat", chatRouter);
 
 export default app;

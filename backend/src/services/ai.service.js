@@ -1,5 +1,5 @@
 import { AIMessage, HumanMessage, SystemMessage } from "langchain";
-import { FALLBACK_CHAIN, mistrilModel } from "../ai/model.js";
+import { FALLBACK_CHAIN, getModel, mistralModel } from "../ai/model.js";
 import { searchAgent } from "../ai/agent/search.agent.js";
 import { internetSearchSourceSchema } from "../ai/internet.js";
 
@@ -47,8 +47,19 @@ const toLangchainMessages = (messages) => [
 ];
 
 export const generateResponse = async (messages, onChunk, signal) => {
-  const modelId = FALLBACK_CHAIN[0];
-  return await runAgent(modelId, messages, onChunk, signal);
+  let lastError;
+
+  for (const modelId of FALLBACK_CHAIN) {
+    try {
+      return await runAgent(modelId, messages, onChunk, signal);
+    } catch (err) {
+      lastError = err;
+      if (signal?.aborted) throw err;
+      console.warn(`Model ${modelId} failed, trying next in fallback chain:`, err.message);
+    }
+  }
+
+  throw lastError;
 };
 
 const runAgent = async (modelId, messages, onChunk, signal) => {
@@ -173,27 +184,23 @@ const handleAIChunk = (chunk, parts, onChunk, appendText) => {
 
 const handleToolChunk = (chunk, parts, onChunk) => {
   const toolCallId = chunk.tool_call_id || chunk.toolCallId;
+  if (!toolCallId) {
+    console.error("handleToolChunk: missing toolCallId on tool chunk", chunk);
+    return;
+  }
+
   const activeToolIndex = parts.findLastIndex(
     (part) =>
-      part.type === "dynamic-tool" &&
-      (toolCallId
-        ? part.toolCallId === toolCallId
-        : part.toolName === chunk.name && part.state === "streaming"),
+      part.type === "dynamic-tool" && part.toolCallId === toolCallId,
   );
 
   if (activeToolIndex === -1) {
-    parts.push({
-      type: "dynamic-tool",
-      toolName: chunk.name,
-      toolCallId,
-      state: "done",
-      args: "",
-      output: chunk.content,
-    });
-  } else {
-    parts[activeToolIndex].state = "done";
-    parts[activeToolIndex].output = chunk.content;
+    console.error("handleToolChunk: no matching tool part found for toolCallId", toolCallId);
+    return;
   }
+
+  parts[activeToolIndex].state = "done";
+  parts[activeToolIndex].output = chunk.content;
 
   onChunk?.({
     type: "tool-call-result",
@@ -250,7 +257,7 @@ const buildCitations = (parts) => {
 
 export const generateChatTitle = async (message, signal) => {
   try {
-    const response = await mistrilModel.invoke([
+    const response = await mistralModel.invoke([
       new SystemMessage(
         `Generate a concise 2-4 word title for a chat conversation based on the user's first message.`,
       ),

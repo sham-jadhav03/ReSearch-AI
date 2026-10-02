@@ -125,7 +125,11 @@ export const sendMessage = async (req, res) => {
     await createUserMessage({ chatId: finalChatId, content: message });
 
     const contextMessages = buildContext(
-      await messageModel.find({ chat: finalChatId, deletedAt: null }).select("role content").sort({ createdAt: 1 }).lean()
+      await messageModel
+        .find({ chat: finalChatId, deletedAt: null })
+        .select("role content parts")
+        .sort({ createdAt: 1 })
+        .lean()
     );
 
     stopHeartbeat = setupSSE(res, {

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const textPartSchema = z.object({
   type: z.literal("text"),
-  text: z.string().min(1),
+  text: z.string().default(""),
 });
 
 const dynamicToolPartSchema = z.object({
