@@ -64,5 +64,12 @@ export const config = {
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
   SERVER_URL: process.env.SERVER_URL || "http://localhost:4000",
-  NODE_ENV: process.env.NODE_ENV || "development",
+  // AI provider call configuration (see src/ai/model.js). Optional env overrides;
+  // defaults keep single requests bounded without changing current behavior.
+  AI_REQUEST_TIMEOUT_MS: process.env.AI_REQUEST_TIMEOUT_MS
+    ? Number(process.env.AI_REQUEST_TIMEOUT_MS)
+    : 120_000,
+  AI_MAX_OUTPUT_TOKENS: process.env.AI_MAX_OUTPUT_TOKENS
+    ? Number(process.env.AI_MAX_OUTPUT_TOKENS)
+    : 8192,
 };

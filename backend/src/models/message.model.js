@@ -107,7 +107,15 @@ messageSchema.index({ chat: 1, createdAt: 1 });
 // Purges soft-deleted messages (deletedAt set) automatically after 30 days.
 // Documents with deletedAt: null are never touched by the TTL monitor,
 // so active messages are immune — only cascaded (deleted) ones expire.
-messageSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+// partialFilterExpression keeps the index out of every live message
+// (`deletedAt: null`), avoiding index bloat.
+messageSchema.index(
+  { deletedAt: 1 },
+  {
+    expireAfterSeconds: 30 * 24 * 60 * 60,
+    partialFilterExpression: { deletedAt: { $type: "date" } },
+  },
+);
 
 messageSchema.virtual("hasCitations").get(function () {
   return this.citations.length > 0;

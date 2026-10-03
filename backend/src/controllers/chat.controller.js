@@ -234,7 +234,7 @@ export const getMessages = async (req, res) => {
       messageModel.find(filter)
         .sort({ createdAt: 1, _id: 1 })
         .select("-__v")
-        .lean({ virtuals: true });
+        .lean();
 
     let messages;
     let total;
@@ -246,6 +246,15 @@ export const getMessages = async (req, res) => {
     } else {
       messages = await baseQuery();
     }
+
+    // Mongoose lean() strips schema virtuals, and `.lean({ virtuals: true })`
+    // is a no-op without the mongoose-lean-virtuals plugin (verified on
+    // Mongoose 9.9.1). Compute `hasCitations` directly so the frontend Sources
+    // footer works for persisted chats after a reload.
+    messages = messages.map((msg) => ({
+      ...msg,
+      hasCitations: Boolean(msg.citations?.length),
+    }));
 
     res.status(200).json({
       message: "Messages retrieved successfully.",
