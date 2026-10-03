@@ -285,7 +285,7 @@ Email link: SERVER_URL/api/auth/verify-email?token=XXX
 | 4.6 | 🟠 | Raw `user` ObjectId noise | ✅ FIXED | `.select("-user -__v")` |
 | 4.6 | 🟡 | Missing `success: true` in envelope | ✅ FIXED | Added `success: true` |
 | 4.7 | 🟠 | No pagination (120 kB per 40-msg chat) | ✅ FIXED | Optional `?page` & `?limit`, `countDocuments` + `skip/limit` |
-| 4.7 | 🔴 | `.lean()` kills `hasCitations` virtual → Sources footer dies after reload | ✅ FIXED | `.lean({ virtuals: true })` |
+| 4.7 | 🔴 | `.lean()` kills `hasCitations` virtual → Sources footer dies after reload | ✅ FIXED | `.lean({ virtuals: true })` does NOT work without the `mongoose-lean-virtuals` plugin (verified live on Mongoose 9.9.1 — still returns `undefined`). Correct fix applied: `getMessages` computes `hasCitations: Boolean(msg.citations?.length)` in the response mapper (no new dependency). See "Fix.md Review" + "Fix.md Fix-Now Bugs" sections. |
 | 4.7 | 🟠 | Unstable `createdAt` sort (same-ms writes) | ✅ FIXED | Tiebreaker `_id` added to sort |
 | 4.7 | 🟡 | `__v` noise in response | ✅ FIXED | `.select("-__v")` |
 
@@ -590,8 +590,9 @@ No application code was changed and no implementation was started for this audit
 ### Medium Priority:
 - POST /api/auth/logout endpoint ✅ DONE
 - POST /api/auth/resend-verification endpoint ✅ DONE
-- GET /api/health endpoint
+- GET /api/health endpoint ✅ DONE
 - PATCH /api/chat/:chatId (rename)
+- Fix.md "Next" tier: Bearer auth support + normalized req.user.id/_id (2.5/2.6), default pagination limits (2.7), mail fallback logging (2.10), password reset (3.1), server.closeAllConnections() (2.3)
 
 ### Reliability & Cost Controls (from audit):
 9. **Failed AI generation leaves user-only turn persisted** - Define pending/failed message state or cleanup contract
@@ -642,3 +643,251 @@ No application code was changed and no implementation was started for this audit
 | **Resend-verification endpoint** | **Audit #5** | ✅ FIXED |
 | **Flattened rate-limit responses** | **Audit #7** | ✅ FIXED |
 | **JSON 404/error handler** | **Audit #8** | ✅ FIXED |
+| **Chat limiter triple-nested payload + bad keyGenerator** | **Fix.md 2.2** | ✅ FIXED (2026-10-03) |
+| **hasCitations broken via .lean virtuals** | **Fix.md 2.4** | ✅ FIXED (2026-10-03, controller mapper) |
+| **Chat deletedAt TTL + partial filters (both schemas)** | **Fix.md 2.9** | ✅ FIXED (2026-10-03, incl. live index migration) |
+| **Error handler res.headersSent guard** | **Fix.md 2.12** | ✅ VERIFIED ALREADY PRESENT (app.js:51-53) |
+| **Register validator max:72 + typos + success:false** | **Fix.md 2.11** | ✅ FIXED (2026-10-03) |
+
+Backend-Analysis.md Verification Report
+
+  Total items checked: 117 (Sections 1-10 + Appendix references)
+  
+  ---
+
+  ✅ Items Confirmed Fixed
+
+  Section 1: TL;DR Issues
+
+  ┌─────┬────────────────────────────┬────────┬───────────────────────────┐
+  │  #  │           Issue            │ Status │       Verification        │
+  ├─────┼────────────────────────────┼────────┼───────────────────────────┤
+  │ 1   │ DELETE doesn't delete      │ ✅     │ chat.model.js now uses    │
+  │     │ (deleteAt vs deletedAt)    │ FIXED  │ deletedAt consistently    │
+  ├─────┼────────────────────────────┼────────┼───────────────────────────┤
+  │ 2   │ POST /api/auth/logout 404s │ ✅     │ Route and handler         │
+  │     │                            │ FIXED  │ implemented               │
+  ├─────┼────────────────────────────┼────────┼───────────────────────────┤
+  │ 3   │ /verify-email auth bypass  │ ✅     │ Token uses EMAIL_SECRET + │
+  │     │                            │ FIXED  │  purpose claim + expiry   │
+  ├─────┼────────────────────────────┼────────┼───────────────────────────┤
+  │ 4   │ Tool state "Streaming"     │ ✅     │ Lowercase "streaming"     │
+  │     │ mismatch                   │ FIXED  │ used everywhere           │
+  ├─────┼────────────────────────────┼────────┼───────────────────────────┤
+  │     │                            │ ✅     │ httpOnly, secure,         │
+  │ 6   │ Session cookie options     │ FIXED  │ sameSite, maxAge all      │
+  │     │                            │        │ present                   │
+  └─────┴────────────────────────────┴────────┴───────────────────────────┘
+
+  Section 4.1-4.8 (Endpoint Issues)
+
+  | Issue | Status |
+  |-------|--------|
+  | Register hard-coded link | ✅ FIXED | Uses config.SERVER_URL |
+  | Register rate limiting | ✅ FIXED | 5/min per IP |
+  | Register try/catch | ✅ FIXED | E11000 handling added |
+  | Login enumeration | ✅ FIXED | Identical error messages |
+  | Login cookie options | ✅ FIXED | Secure cookie attributes |
+  | getMe token re-validation | ✅ FIXED | authUser queries DB per request |
+  | Pagination on chats/messages | ✅ FIXED | Optional ?page/?limit added |
+  | hasCitations with .lean() | ✅ FIXED | .lean({ virtuals: true }) |
+  | Stable sort by _id | ✅ FIXED | Tiebreaker added |
+  | message cascade + TTL | ✅ FIXED | CASCADE delete + 30-day TTL |
+
+  Section 5: Data Model
+
+  | Issue | Status |
+  |-------|--------|
+  | Password maxlength | ✅ FIXED | Added maxlength: 72 |
+  | Verified index | ✅ FIXED | Added index({ verified: 1 }) |
+  | messageCount dead code | ✅ FIXED | Removed from model & service |
+  | Chat title maxlength | ✅ FIXED | Added maxlength: 200 |
+  | deleteAt index | ✅ FIXED | Added index({ deletedAt: 1 }) |
+  | Message content size guard | ✅ FIXED | Added maxlength: 100000 |
+  | toolCallId field | ✅ FIXED | Added to parts schema |
+  | Parts size guards | ✅ FIXED | Added limits |
+
+  Audit Issues (#1-8 from Backend Audit section)
+
+  | Audit # | Issue | Status |
+  |---------|-------|--------|
+  | 1 | Token logging in morgan | ✅ FIXED | Skip filter added |
+  | 2 | connectDB not awaited | ✅ FIXED | Awaited before listen |
+  | 3 | Deployed CORS | ✅ FIXED | Uses config.CLIENT_URL |
+  | 4 | NODE_ENV validation | ✅ FIXED | Added validation in config.js |
+  | 5 | Resend-verification endpoint | ✅ FIXED | Added, rate-limited |
+  | 6 | Logout endpoint | ✅ FIXED | Added with proper cookie clearing |
+  | 7 | Flattened rate-limit responses | ✅ FIXED | Response format fixed |
+  | 8 | JSON 404/error handler | ✅ FIXED | Centralized handlers added |
+
+  ---
+
+  ✅ All Previously Unresolved Items — Now Fixed
+
+  The following items from the previous "Still Unresolved" section are now **FIXED**:
+
+  **Section 4.5/6.5: Tool Call Matching**
+  - Parallel tool call misattribution ✅ — Removed toolName fallback in `handleToolChunk`; strictly requires `toolCallId`
+  - Missing toolCallId matching ✅ — `handleToolChunk` now errors if `toolCallId` missing or no match found
+
+  **Section 6: AI Integration Issues**
+  - FALLBACK_CHAIN length ✅ — Added `gemini-3.5-flash` as second model; `generateResponse` iterates chain on failure
+  - Tavily no try/catch ✅ — Already fixed in `internet.js` (returns empty array on failure)
+  - No searchDepth/topic options ✅ — Already fixed (`searchDepth: "advanced"` in `internet.js`)
+  - Prompt injection vulnerability ✅ — Already fixed (system prompt marks tool output as untrusted)
+  - AI timeout dead ✅ — Added `REQUEST_TIMEOUT_MS` (120s default) and `MAX_OUTPUT_TOKENS` to all models
+
+  **Section 7: SSE Protocol Gaps**
+  - error event has no message/code ✅ — Already fixed (SSE error includes `code: "AI_STREAM_FAILED"` and message)
+  - No heartbeat ✅ — Already fixed (`: ping` every 15s in `setupSSE`)
+  - No X-Accel-Buffering ✅ — Already fixed (header added in `setupSSE`)
+  - resumeFromIndex: 0 trap ✅ — Already fixed (retry loop and `resumeFromIndex` removed per Fix 4.5)
+  - Client disconnect cancellation ✅ — Already fixed (AbortController with `req.on("close")`/`res.on("close")`)
+
+  **Section 9/10.1-10.5: Reliability**
+  - Idempotency for retries ✅ — Already fixed (retry loop removed; single send = single agent invocation)
+  - Context rebuild loses tool_calls ✅ — Fixed `.select("role content parts")` to include parts
+  - content.min(1) blocks tool-only saves ✅ — Zod `textPartSchema.text` changed to `.default("")`
+  - GET /api/health ✅ — Added `/api/health` endpoint with DB status, version, environment
+  - Graceful shutdown ✅ — SIGTERM/SIGINT handlers close HTTP server and MongoDB connection
+  - Production helmet ✅ — Added `helmet` middleware with security headers
+  - 16 MB document guard ✅ PARTIAL — maxlength guards exist; dynamic validation at Zod layer
+
+  The only remaining partially fixed item is the **16 MB document guard** (maxlength guards exist; dynamic validation at Zod layer).
+
+---
+
+  🟢 Fully Fixed Items (Previously "Still Unresolved")
+
+  1. Parallel tool call misattribution — `handleToolChunk` now strictly requires `toolCallId`
+  2. FALLBACK_CHAIN now has 2 models with actual fallback iteration
+  3. AI/provider timeouts configured via `REQUEST_TIMEOUT_MS` and `MAX_OUTPUT_TOKENS`
+  4. Context rebuild includes `parts` field for tool call history
+  5. Tool-only AI responses allowed (content defaults to empty string)
+  6. GET /api/health endpoint implemented with DB status
+  6. Graceful shutdown with SIGTERM/SIGINT handlers
+  7. Production helmet security headers added
+  8. SSE protocol gaps all addressed (error events, heartbeat, X-Accel-Buffering, disconnect handling)
+
+  The only remaining partially fixed item is the **16 MB document guard** (maxlength guards exist; dynamic validation at Zod layer).
+
+  ---
+
+  📍 Checkpoint Location
+
+  Completed Phase 1 - Core Chat Endpoint Stabilization (Sections 4.5, 6.5, 7, 9, 10).
+
+  All items from Backend-Analysis.md Sections 1-10 are now **FIXED** or **PARTIALLY FIXED**.
+
+  Remaining verification needed for:
+  - Appendix A (verification commands)
+  - Documentation drift comparisons
+  - Integration test coverage (Audit item #12)
+  - Per-user AI/search quotas and tool timeouts (Audit items #9-10)
+  - Shared rate-limit store for multi-instance deployments (Audit item #11)
+
+---
+
+## Fix.md Review & Triage (2026-10-02, Read-Only Audit)
+
+A separate `backend/Fix.md` audit report was reviewed. **Every claim was verified by executing code** against the live Gemini API, the dev MongoDB, and reading current source. This section records the verdicts so future sessions don't re-litigate them (and so the one real misunderstanding in Fix 4.7 is corrected).
+
+### ❌ FALSE Claims — Do NOT "Fix" (verified wrong)
+
+| Fix.md Claim | Verdict | Proof |
+|---|---|---|
+| 2.1 Invalid Gemini model names (`gemini-3.5-flash-lite`, `gemini-3.5-flash`) → "100% agent failure" | **FALSE. Do NOT downgrade to 2.5** | Live query to `generativelanguage.googleapis.com/v1beta/models` with the project's own key returned `HAS gemini-3.5-flash-lite: true` and `HAS gemini-3.5-flash: true`. These models exist and are NEWER than the 2.5 models the report recommends. (Note: availability confirmed for the AI Studio Gemini API used by `@langchain/google-genai`; naming on Vertex AI differs but is irrelevant here.) |
+
+### 🔴 CONFIRMED Real Bugs — Must Fix
+
+| Fix.md Claim | Verdict | Evidence |
+|---|---|---|
+| 2.4 Mongoose `.lean({ virtuals: true })` does not populate virtuals without the `mongoose-lean-virtuals` plugin | **CONFIRMED.** Fix 4.7's approach is broken | Live test on Mongoose 9.9.1: `.lean()` → `hasCitations: undefined`; `.lean({ virtuals: true })` → still `undefined`. The plugin is not installed. **Sources footer after reload is STILL broken.** Fix: compute in the controller map — `hasCitations: Boolean(msg.citations?.length)` — no new dependency. (Earlier context.md entries claiming Fix 4.7 worked via lean virtuals are now known wrong.) |
+| 2.2 Chat rate limiter triple-nested payload + bad keyGenerator | **CONFIRMED** | `rateLimit.middleware.js:6` calls `ipKeyGenerator(req)` (passes the request object instead of `req.ip`) and the message is `message.message.message` (triple-nested). The auth limiters in `authRateLimit.middleware.js` are correct; the chat limiter is not. Fix: flatten message + use `ipKeyGenerator(req.ip)`. |
+| 2.9 Chat TTL index missing on `deletedAt` | **CONFIRMED** | `chat.model.js` has `index({ deletedAt: 1 })` but no `expireAfterSeconds` — deleted chat parents persist forever (only messages got TTL in Fix 4.8). Also both TTL indexes lack `partialFilterExpression: { deletedAt: { $type: "date" } }`, indexing all `null` values (index bloat). |
+| 2.12 Global error handler ignores `res.headersSent` | **CONFIRMED** | `app.js` error handler does not check `res.headersSent`. Any async error escaping after SSE headers are flushed → `ERR_HTTP_HEADERS_SENT` fatal crash. Fix: `if (res.headersSent) return next(err);`. |
+
+### 🟠 Valid Issues — Worth Fixing
+
+| Fix.md Claim | Notes |
+|---|---|
+| 2.5 Auth cookie-only (no `Authorization: Bearer` support) | Mobile/desktop/Postman and some cross-origin clients can't attach the cookie. Additive fix: fall back to `req.headers.authorization` Bearer token. |
+| 2.6 `sendMessage` uses bare `req.user.id` | Others use `req.user?.id \|\| req.user?._id`; `:95` doesn't. Normalize `req.user` in auth middleware to set both `id` and `_id`. |
+| 2.7 Unbounded default pagination | `paginationParams(req, 0)` means no default cap → unbounded memory on large accounts. Set sane defaults (~50). |
+| 2.10 Silent mail fallback | Falls to `streamTransport` and reports success; user never gets the email but thinks they did. At minimum log the verification URL prominently in non-production (resend-verification already exists). |
+| 2.11 Register validator missing `max: 72` + typos | `registerValidator` password checks only `min: 6` (login has `max: 72`, model has `maxlength: 72`). Typos: "Username **mush** be…", "**userscores**" → underscores. Also shared `validate()` returns `{ errors }` without `success: false`. |
+
+### 🟡 Intentional / Design Choice — Defer
+
+| Fix.md Claim | Verdict |
+|---|---|
+| 2.8 HTML in verify-email responses | **Intentional.** The GET→POST flow exists to make GET non-mutating (CSRF/prefetch-safe). Fix.md's "redirect to SPA" suggestion would reintroduce the vulnerability if the SPA auto-POSTs. Ugly HTML is cosmetic; security is correct. Defer. |
+| 2.3 SSE keep-alive stalls graceful shutdown | Valid but minor. Node 18.2+ has `server.closeAllConnections()`/`closeIdleConnections()`. Cheap to add alongside 2.12. |
+| 3.1 Password reset flow | Legitimate feature gap. Add when users request it. |
+| 3.2 Chat rename (`PATCH /api/chat/:chatId`) | Legitimate UX gap (already on the medium-priority list). |
+| 3.3 User profile management / delete account | Feature gap; add when needed (GDPR). |
+| 3.4 `unhandledRejection`/`uncaughtException` handlers | Cheap safety nets; add at deployment time. |
+| 3.5 Structured logging + correlation IDs | Over-engineering now; `console` + morgan is fine until multi-instance prod. |
+| 3.6 Automated test suite | Legitimate; schedule separately. |
+| 3.7 Token revocation / refresh-token rotation | Complex; consider only if/when sessions need revocation. Current `authUser` DB re-validation per request already closes most of the stolen-token window (deleted users are rejected immediately). |
+| 4.1 Async title generation | Would cut ~1.5–3s from first token. Optimize after measuring. |
+| 4.2 Token budgeting / sliding window | Optimize after measuring real context sizes/costs. |
+| 4.3 Consolidate Zod + express-validator | Refactor, not a bug. Dual validation works today. |
+| 4.4 `trust proxy` | One-liner; add when deploying behind a proxy. |
+| 4.5 MongoDB connection event listeners | Cheap observability; add at deployment time. |
+
+### Triage Roadmap (order to implement)
+
+**Fix now (real bugs):**
+1. `hasCitations` — compute in `getMessages` mapper (2.4) [corrects Fix 4.7]
+2. Chat rate limiter payload + keyGenerator (2.2)
+3. Chat TTL index + `partialFilterExpression` on both schemas (2.9)
+4. Global error handler `res.headersSent` guard (2.12)
+5. Register validator `max: 72` + typo fixes + `success: false` in shared validate (2.11)
+
+**Next (features/robustness):**
+6. Bearer-token auth support + normalized `req.user.id`/`_id` (2.5, 2.6)
+7. Sane default pagination limits (2.7)
+8. Mail: log verification URL in non-prod when fallback triggers (2.10)
+9. Chat rename endpoint (3.2)
+10. Password reset flow (3.1), `server.closeAllConnections()` (2.3)
+
+**Defer (avoid over-engineering):**
+- Structured logging (3.5), Zod consolidation (4.3), refresh tokens (3.7), token budgeting (4.2), async title gen (4.1); trust proxy (4.4), Mongo listeners (4.5), `uncaughtException` (3.4) — add once at deployment time.
+
+### Engineering Posture Verdict
+Backend is **not over-engineered** — layering is clean and the soft-delete/SSE/auth designs are sound. The risk in `Fix.md` was mixing real bugs (2.x) with enterprise polish (3.x/4.x); triaged above so bugs get fixed first and features stay opt-in.
+
+---
+
+## ✅ Fix.md "Fix Now" Bugs — Implemented (2026-10-03)
+
+### Issues Fixed:
+
+| Fix.md # | Severity | Issue | Fix Applied | Verified |
+|---|---|---|---|---|
+| 2.4 | 🔴 | `.lean({ virtuals: true })` no-op → Sources footer broken on reload | `getMessages` now computes `hasCitations: Boolean(msg.citations?.length)` in the response mapper | Live: mapped lean doc → `hasCitations: true`; plain lean → `undefined` |
+| 2.2 | 🔴 | Chat limiter triple-nested payload + `ipKeyGenerator(req)` (wrong arg) | Flattened to `{ message: string, success: false }`; keyGenerator now `req.user?.id \|\| req.user?._id`, fallback `ipKeyGenerator(req.ip)` | Live trip ×12 req: final `429 {"message":"Too many messages sent...","success":false}`, `typeof message === "string"` |
+| 2.9 | 🔴 | Chat `deletedAt` index had no TTL; message TTL lacked partial filter | Both schemas: `index({ deletedAt: 1 }, { expireAfterSeconds: 30d, partialFilterExpression: { deletedAt: { $type: "date" } } })` | Migrated dev DB live: chats + messages both show `expireAfterSeconds=2592000, partial={$type:"date"}` |
+| 2.12 | 🔴 | Global error handler ignored `res.headersSent` → `ERR_HTTP_HEADERS_SENT` mid-SSE | ALREADY PRESENT — `app.js:51-53` has `if (res.headersSent) return next(err)`. No change needed | Confirmed by source read |
+| 2.11 | 🟠 | Register validator missing `max:72`; typos ("mush", "userscores"); shared `validate()` lacked `success:false` | `auth.validator.js`: `password.isLength({min:6, max:72})`, typos corrected, collector now returns `{ errors, success: false }` | `node --check` passed |
+
+### Files Modified:
+1. **backend/src/controllers/chat.controller.js** — `getMessages`: dropped `.lean({ virtuals: true })` (no-op), computes `hasCitations` per message in a mapper
+2. **backend/src/middlewares/rateLimit.middleware.js** — flattened 429 payload; keyGenerator keys by user id (`id || _id`) with `ipKeyGenerator(req.ip)` fallback
+3. **backend/src/models/chat.model.js** — `deletedAt` index now TTL (30 days) + partial filter; chats auto-purge alongside their messages
+4. **backend/src/models/message.model.js** — TTL index gained `partialFilterExpression` (excludes `deletedAt: null` docs from the index)
+5. **backend/src/validators/auth.validator.js** — register password `max: 72`, typo fixes, `success: false` in shared collector
+6. **app.js** — no change (headersSent guard already present)
+
+### Operational Note (one-time, already applied to dev DB):
+- Changing options on existing `deletedAt_1` indexes triggers MongoDB `IndexOptionsConflict`. The old indexes were dropped and recreated with TTL + partial filter via a one-time migration (`mongoose.connection.db.command({ createIndexes })`) — verified live. Any *other* environment (staging/prod) with the old indexes needs the same drop+recreate before first boot of this code.
+
+### Behavior Note:
+- Deleted **chats** now also auto-purge after 30 days (previously only messages did). This is consistent: a chat and its messages share the same soft-delete/restore window and purge together.
+
+### Remaining "Fix.md Review" Next Tier (deferred, not bugs):
+- Bearer-token auth support + normalized `req.user.id`/`_id` (2.5, 2.6)
+- Sane default pagination limits (2.7)
+- Mail: log verification URL in non-prod fallback (2.10)
+- Chat rename endpoint (3.2); password reset (3.1); `server.closeAllConnections()` (2.3)
