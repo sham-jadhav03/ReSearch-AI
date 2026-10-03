@@ -1,6 +1,5 @@
 import CodeBlock from "../components/ui/CodeBlock";
 import CitationChip from "./ui/CitationChip";
-
 const processStringWithCitations = (text, citations) => {
   if (typeof text !== "string") return text;
 

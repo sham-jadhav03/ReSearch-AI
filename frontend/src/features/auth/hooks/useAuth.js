@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { register, login, getMe, logout as logoutApi } from "../services/auth.api";
 import { setError, setLoading, setUser } from "../slice/auth.slice";
@@ -34,17 +35,20 @@ export const useAuth = () => {
     }
   }
 
-  async function handleGetMe() {
+  // Memoized: App.jsx depends on it for its getMe-on-mount effect —
+  // useCallback keeps the identity stable so the effect doesn't re-run
+  // on every render.
+  const handleGetMe = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       const data = await getMe()
       dispatch(setUser(data.user));
-    } catch (error) {
+    } catch {
       dispatch(setUser(null));
     } finally {
       dispatch(setLoading(false));
     }
-  }
+  }, [dispatch]);
 
   async function handleLogout() {
     try {
