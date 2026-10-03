@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useNavigate } from "react-router";
 import "remixicon/fonts/remixicon.css";
 import { useChat } from "../hooks/useChat";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,10 +15,12 @@ import StreamingBubble from "../components/StreamingBubble";
 const DashBoard = () => {
   const chat = useChat();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { streamingParts, isStreaming, handleGetChats } = chat;
 
   const [chatInput, setChatInput] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const messageEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const textAreaRef = useRef(null);
@@ -57,6 +60,21 @@ const DashBoard = () => {
   useEffect(() => {
     handleGetChats();
   }, [handleGetChats]);
+
+  // Stream elapsed-time ticker (seconds) — drives StreamingProgress stats.
+  // Reset lives in the cleanup (runs when isStreaming flips) rather than in the
+  // effect body, per react-hooks/set-state-in-effect.
+  useEffect(() => {
+    if (!isStreaming) return;
+    const start = Date.now();
+    const interval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => {
+      clearInterval(interval);
+      setElapsedTime(0);
+    };
+  }, [isStreaming]);
 
   const handleSubmit = (e) => {
     e?.preventDefault();
@@ -124,9 +142,16 @@ const DashBoard = () => {
           </span>
         </div>
 
-        {/* Error Banner */}
+        {/* Error Banner — error may be a plain string (non-stream paths) or
+            { message, code } from send failures; ErrorBanner reads both. */}
         {error && (
-          <ErrorBanner message={error} onDismiss={handleDismissError} />
+          <ErrorBanner
+            message={error}
+            errorCode={typeof error === "object" ? error.code : undefined}
+            onDismiss={handleDismissError}
+            onRetry={chat.retryPayload ? chat.retryLastMessage : undefined}
+            onLogin={() => navigate("/login")}
+          />
         )}
 
         {/* Messages */}
@@ -147,7 +172,7 @@ const DashBoard = () => {
             {isLoading && !isStreaming && <ThinkingIndicator />}
 
             {/* Streaming bubble */}
-            {isStreaming && <StreamingBubble streamingParts={streamingParts} />}
+            {isStreaming && <StreamingBubble streamingParts={streamingParts} elapsedTime={elapsedTime} />}
 
             <div ref={messageEndRef} />
           </div>

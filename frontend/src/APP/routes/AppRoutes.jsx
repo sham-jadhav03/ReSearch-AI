@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { useSelector } from "react-redux";
 import { lazy, Suspense } from "react";
 import Protected from "../../features/auth/components/Protected";
+import LoadingIndicator from "../../features/chat/components/LoadingIndicator";
 
 const Login = lazy(() => import("../../features/auth/pages/Login"));
 const Register = lazy(() => import("../../features/auth/pages/Register"));
@@ -11,9 +12,12 @@ const Landing = lazy(() => import("../../features/chat/pages/Landing"));
 const Profile = lazy(() => import("../../features/chat/pages/Profile"));
 
 const LoadingFallback = () => (
-  <div className="flex h-screen bg-[#0f0f10] items-center justify-center">
-    <div className="w-8 h-8 border-4 border-[#34d399]/20 border-t-[#34d399] rounded-full animate-spin" />
-  </div>
+  <LoadingIndicator
+    variant="spinner"
+    size="medium"
+    text=""
+    className="h-screen bg-[#0f0f10] text-[#34d399]"
+  />
 );
 
 const RootComponent = () => {

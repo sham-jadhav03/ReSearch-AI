@@ -1,6 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router";
+import LoadingIndicator from "../../chat/components/LoadingIndicator";
 
 const Protected = ({ children }) => {
   const user = useSelector((state) => state.auth.user);
@@ -8,10 +9,13 @@ const Protected = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-[#0f0f10] items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#34d399]/20 border-t-[#34d399] rounded-full animate-spin" />
-      </div>
-    )
+      <LoadingIndicator
+        variant="spinner"
+        size="medium"
+        text=""
+        className="h-screen bg-[#0f0f10]"
+      />
+    );
   }
 
   if (!user) {

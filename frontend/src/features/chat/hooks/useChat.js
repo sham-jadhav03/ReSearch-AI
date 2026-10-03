@@ -23,14 +23,20 @@ export const useChat = () => {
   const [streamingParts, setStreamingParts] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const streamingPartsRef = useRef([]);
+  // Holds { message, chatId } of the last FAILED send attempt — only when the
+  // stream never produced a "start" event, i.e. the backend almost certainly
+  // never persisted the user message, so re-sending cannot duplicate it.
+  const [retryPayload, setRetryPayload] = useState(null);
 
   const handleSendMessage = useCallback(
     async ({ message, chatId }) => {
       let resolvedChatId = chatId;
       let isDone = false;
+      let streamStarted = false;
 
       dispatch(setError(null));
       dispatch(setLoading(true));
+      setRetryPayload(null);
       streamingPartsRef.current = [];
       setStreamingParts([]);
       setIsStreaming(false);
@@ -65,6 +71,7 @@ export const useChat = () => {
               }
 
               if (parsed.type === "start") {
+                streamStarted = true;
                 resolvedChatId = resolvedChatId || parsed.chatId;
 
                 if (!chatId) {
@@ -235,12 +242,47 @@ export const useChat = () => {
       } catch (error) {
         console.error("SSE connection failed:", error);
         setIsStreaming(false);
-        dispatch(setError(error.message || "Connection lost. Please try again."));
+
+        // Pre-start failures leave no persisted user message on the backend,
+        // so a Retry can safely re-send the same payload without doubling the
+        // chat history. Once "start" arrived, the backend already wrote the
+        // user message — retry is disabled to avoid duplicates.
+        if (!streamStarted && !isDone) {
+          setRetryPayload({ message, chatId: resolvedChatId });
+        }
+
+        // Errors flow into the slice as { message, code } so ErrorBanner can
+        // categorize by code first and fall back to message-text heuristics.
+        const code =
+          error.code ||
+          (error.status === 429
+            ? "QUOTA_EXCEEDED"
+            : error.status >= 500
+              ? "SERVER_ERROR"
+              : error.status
+                ? "NETWORK_ERROR"
+                : error.name === "TypeError"
+                  ? "NETWORK_ERROR"
+                  : undefined);
+
+        dispatch(
+          setError({
+            message: error.message || "Connection lost. Please try again.",
+            code,
+          }),
+        );
         dispatch(setLoading(false));
       }
     },
     [dispatch],
   );
+
+  // Re-sends `retryPayload`. Safe because the payload is only captured for
+  // sends that failed before the SSE "start" event (nothing persisted).
+  const retryLastMessage = useCallback(() => {
+    if (!retryPayload) return;
+    handleSendMessage(retryPayload);
+  }, [retryPayload, handleSendMessage]);
 
   const handleGetChats = useCallback(async () => {
     try {
@@ -321,5 +363,7 @@ export const useChat = () => {
     handleDeleteChat,
     isStreaming,
     streamingParts,
+    retryPayload,
+    retryLastMessage,
   };
 };

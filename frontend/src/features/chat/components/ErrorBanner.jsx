@@ -119,7 +119,7 @@ const ErrorBanner = ({ message, onDismiss, errorCode, onRetry, onLogin }) => {
 
       {/* Action buttons */}
       <div className="flex items-center gap-1.5 shrink-0">
-        {config.showRetry && (
+        {config.showRetry && onRetry && (
           <button
             onClick={handleRetry}
             className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer

@@ -2,12 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import LogoIcon from "../shared/LogoIcon";
 import StreamingProgress from "./StreamingProgress";
 
-// Typed text effect component for realistic streaming simulation
+// Typed text effect component for realistic streaming simulation.
+// - Prefix-continuation: when the part's `text` grows with the same prefix
+//   (normal SSE append), typing continues from where it left off instead of
+//   restarting from 0. A replaced text (different prefix) restarts cleanly.
+// - Tick batching: all owed characters are applied in one setState per tick
+//   (backlog catch-up), not one setState per character.
 const TypedText = ({ text, speed = 30, onComplete, onUpdate }) => {
   const [displayText, setDisplayText] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const posRef = useRef(0);         // chars currently displayed
   const startTimeRef = useRef(null);
-  const characterCountRef = useRef(0);
+  const prevTextRef = useRef("");
 
   useEffect(() => {
     if (!text) {
@@ -15,29 +20,39 @@ const TypedText = ({ text, speed = 30, onComplete, onUpdate }) => {
       return;
     }
 
-    // Reset state
-    setDisplayText("");
-    characterCountRef.current = 0;
-    setIsTyping(true);
-    startTimeRef.current = Date.now();
+    const typedPrefix = prevTextRef.current.slice(0, posRef.current);
+    if (!text.startsWith(typedPrefix)) {
+      posRef.current = 0;
+      startTimeRef.current = null;
+    }
+    prevTextRef.current = text;
 
-    let index = 0;
+    // Preserve pacing across effect re-runs so typing speed stays uniform.
+    if (!startTimeRef.current) {
+      startTimeRef.current = Date.now() - posRef.current * speed;
+    }
+
     const timer = setInterval(() => {
-      if (index < text.length) {
-        setDisplayText(prev => prev + text[index]);
-        characterCountRef.current += 1;
-        index++;
-        onUpdate?.(characterCountRef.current, text.length, Date.now());
-      } else {
+      const elapsed = Date.now() - startTimeRef.current;
+      const typed = Math.min(Math.floor(elapsed / speed), text.length);
+
+      if (typed > posRef.current) {
+        posRef.current = typed;
+        setDisplayText(text.slice(0, typed));
+        onUpdate?.(typed, text.length);
+      }
+
+      if (typed >= text.length) {
         clearInterval(timer);
-        setIsTyping(false);
-        startTimeRef.current = null;
         onComplete?.();
       }
     }, speed);
 
     return () => clearInterval(timer);
   }, [text, speed, onComplete, onUpdate]);
+
+  // Cursor is derived from state, not effect-set — no setState in render path.
+  const isTyping = displayText.length < (text?.length ?? 0);
 
   return (
     <span>
@@ -132,11 +147,11 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
 
   const processed = processStreamingParts();
   const [charCount, setCharCount] = useState(0);
-  const [totalChars, setTotalChars] = useState(0);
 
-  const handleTextUpdate = (current, total) => {
+  // onUpdate is called once per typing tick with the typed count — batched,
+  // not per character.
+  const handleTextUpdate = (current) => {
     setCharCount(current);
-    setTotalChars(total);
   };
 
   if (streamingParts.length === 0 && !isStreaming) return null;
@@ -184,12 +199,14 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
           )}
         </div>
 
-        {/* Streaming progress indicator */}
+        {/* Streaming progress indicator — a stream has no knowable total, so
+            the bar is indeterminate and the card shows real stats (chars/s,
+            elapsed) rather than a fake percentage. */}
         {isStreaming && showAdvancedLoader && charCount > 0 && (
           <StreamingProgress
             className="absolute bottom-16 left-4 right-4"
             current={charCount}
-            total={totalChars > 0 ? totalChars : 0}
+            total={0}
             elapsedTime={elapsedTime}
           />
         )}
