@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { config } from "../config/config.js";
-import { ChatMistralAI } from "@langchain/mistralai";
 import { tavily as createTavily } from "@tavily/core";
+import { ChatGroq } from "@langchain/groq";
 
 const REQUEST_TIMEOUT_MS = config.AI_REQUEST_TIMEOUT_MS ?? 120_000;
 const MAX_OUTPUT_TOKENS = config.AI_MAX_OUTPUT_TOKENS ?? 8192;
@@ -44,9 +44,9 @@ export const getModel = (modelId) => {
   return instance;
 };
 
-export const mistralModel = new ChatMistralAI({
-  model: "mistral-small-latest",
-  apiKey: config.MISTRAL_API_KEY,
+export const groqModel = new ChatGroq({
+  model: "openai/gpt-oss-120b",
+  apiKey: config.GROQ_API_KEY,
   timeout: REQUEST_TIMEOUT_MS,
   maxTokens: MAX_OUTPUT_TOKENS,
 });

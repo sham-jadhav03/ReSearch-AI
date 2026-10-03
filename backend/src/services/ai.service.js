@@ -1,5 +1,5 @@
 import { AIMessage, HumanMessage, SystemMessage } from "langchain";
-import { FALLBACK_CHAIN, getModel, mistralModel } from "../ai/model.js";
+import { FALLBACK_CHAIN, getModel, groqModel } from "../ai/model.js";
 import { searchAgent } from "../ai/agent/search.agent.js";
 import { internetSearchSourceSchema } from "../ai/internet.js";
 
@@ -257,7 +257,7 @@ const buildCitations = (parts) => {
 
 export const generateChatTitle = async (message, signal) => {
   try {
-    const response = await mistralModel.invoke([
+    const response = await groqModel.invoke([
       new SystemMessage(
         `Generate a concise 2-4 word title for a chat conversation based on the user's first message.`,
       ),

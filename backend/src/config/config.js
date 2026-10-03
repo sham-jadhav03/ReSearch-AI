@@ -37,8 +37,8 @@ if (!process.env.GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not defined in environment variables");
 }
 
-if (!process.env.MISTRAL_API_KEY) {
-  throw new Error("MISTRAL_API_KEY is not defined in environment variables");
+if (!process.env.GROQ_API_KEY) {
+  throw new Error("GROQ_API_KEY is not defined in environment variables");
 }
 
 if (!process.env.TAVILY_API_KEY) {
@@ -60,7 +60,7 @@ export const config = {
   GOOGLE_USER: process.env.GOOGLE_USER,
   JWT_SECRET: process.env.JWT_SECRET,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
   SERVER_URL: process.env.SERVER_URL || "http://localhost:4000",
