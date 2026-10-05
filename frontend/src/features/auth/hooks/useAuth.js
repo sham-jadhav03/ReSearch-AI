@@ -9,12 +9,19 @@ export const useAuth = () => {
   async function handleRegister({ email, username, password }) {
     try {
       dispatch(setLoading(true));
+      dispatch(setError(null));
       const data = await register({ email, username, password });
-      dispatch(setUser(data.user))
+
+      // The backend registers WITHOUT setting a session cookie (verified:false)
+      // — the user must confirm their email first. Do NOT call setUser here:
+      // treating the 201 as a login lands the user on DashBoard with no cookie,
+      // and the next authed request 401s them straight back out.
+      return { success: true, verified: data.verified !== false, user: data.user ?? null };
     } catch (error) {
       dispatch(
         setError(error.response?.data?.message || "Registration failed"),
       );
+      return { success: false, verified: false, user: null };
     } finally {
       dispatch(setLoading(false));
     }

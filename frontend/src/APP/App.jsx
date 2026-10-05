@@ -2,6 +2,7 @@ import { RouterProvider } from "react-router";
 import { router } from "./routes/AppRoutes.jsx";
 import { useEffect } from "react";
 import { useAuth } from "../features/auth/hooks/useAuth.js";
+import ErrorBoundary from "../components/ErrorBoundary.jsx";
 
 function App() {
 
@@ -11,9 +12,9 @@ function App() {
     handleGetMe()
   }, [handleGetMe])
   return (
-    <>
+    <ErrorBoundary>
       <RouterProvider router={router} />
-    </>
+    </ErrorBoundary>
   );
 }
 

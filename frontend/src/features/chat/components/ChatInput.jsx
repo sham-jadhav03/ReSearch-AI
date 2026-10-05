@@ -173,7 +173,7 @@ const ChatInput = (props) => {
 
     return (
         <>
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-3xl mx-auto relative">
                 {/* Character count and status */}
                 {showCharacterCount && charCount > 0 && (
                     <div className="mb-2 flex items-center justify-between px-1">

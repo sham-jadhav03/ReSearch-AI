@@ -8,6 +8,7 @@ import Sidebar from "../components/Sidebar";
 import ChatInput from "../components/ChatInput";
 import ErrorBanner from "../components/ErrorBanner";
 import EmptyState from "../components/EmptyState";
+import { SUGGESTIONS } from "../shared/global";
 import MessageList from "../components/MessageList";
 import ThinkingIndicator from "../components/ThinkingIndicator";
 import StreamingBubble from "../components/StreamingBubble";
@@ -186,6 +187,7 @@ const DashBoard = () => {
             handleSubmit={handleSubmit}
             isLoading={isLoading}
             textAreaRef={textAreaRef}
+            suggestions={SUGGESTIONS}
           />
         </div>
       </section>
