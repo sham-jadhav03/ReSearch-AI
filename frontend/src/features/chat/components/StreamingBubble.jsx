@@ -1,68 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import LogoIcon from "../shared/LogoIcon";
 import StreamingProgress from "./StreamingProgress";
-
-// Typed text effect component for realistic streaming simulation.
-// - Prefix-continuation: when the part's `text` grows with the same prefix
-//   (normal SSE append), typing continues from where it left off instead of
-//   restarting from 0. A replaced text (different prefix) restarts cleanly.
-// - Tick batching: all owed characters are applied in one setState per tick
-//   (backlog catch-up), not one setState per character.
-const TypedText = ({ text, speed = 30, onComplete, onUpdate }) => {
-  const [displayText, setDisplayText] = useState("");
-  const posRef = useRef(0);         // chars currently displayed
-  const startTimeRef = useRef(null);
-  const prevTextRef = useRef("");
-
-  useEffect(() => {
-    if (!text) {
-      onComplete?.();
-      return;
-    }
-
-    const typedPrefix = prevTextRef.current.slice(0, posRef.current);
-    if (!text.startsWith(typedPrefix)) {
-      posRef.current = 0;
-      startTimeRef.current = null;
-    }
-    prevTextRef.current = text;
-
-    // Preserve pacing across effect re-runs so typing speed stays uniform.
-    if (!startTimeRef.current) {
-      startTimeRef.current = Date.now() - posRef.current * speed;
-    }
-
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - startTimeRef.current;
-      const typed = Math.min(Math.floor(elapsed / speed), text.length);
-
-      if (typed > posRef.current) {
-        posRef.current = typed;
-        setDisplayText(text.slice(0, typed));
-        onUpdate?.(typed, text.length);
-      }
-
-      if (typed >= text.length) {
-        clearInterval(timer);
-        onComplete?.();
-      }
-    }, speed);
-
-    return () => clearInterval(timer);
-  }, [text, speed, onComplete, onUpdate]);
-
-  // Cursor is derived from state, not effect-set — no setState in render path.
-  const isTyping = displayText.length < (text?.length ?? 0);
-
-  return (
-    <span>
-      {displayText}
-      {isTyping && (
-        <span className="inline-block w-1.5 h-5 bg-blue-400 ml-1 animate-pulse rounded-[1px] align-text-bottom" />
-      )}
-    </span>
-  );
-};
 
 // Tool visualization component for better UX
 const ToolCallDisplay = ({ toolName, args, isComplete }) => {
@@ -146,13 +84,8 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
   };
 
   const processed = processStreamingParts();
-  const [charCount, setCharCount] = useState(0);
-
-  // onUpdate is called once per typing tick with the typed count — batched,
-  // not per character.
-  const handleTextUpdate = (current) => {
-    setCharCount(current);
-  };
+  // charCount computed directly from accumulated text for the progress indicator
+  const charCount = processed?.textParts?.reduce((sum, part) => sum + (part.text?.length || 0), 0) || 0;
 
   if (streamingParts.length === 0 && !isStreaming) return null;
 
@@ -179,14 +112,14 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
             />
           ))}
 
-          {/* Display streaming text with typing effect */}
+          {/* Display streaming text — rendered immediately as text-delta accumulates */}
           {processed?.textParts?.map((part, index) => (
             <div key={index} className="mb-2 last:mb-0">
-              <TypedText
-                text={part.text}
-                speed={30}
-                onUpdate={handleTextUpdate}
-              />
+              {part.text && (
+                <span className="text-[16px] text-[#ececf1] break-all">
+                  {part.text}
+                </span>
+              )}
             </div>
           ))}
 
