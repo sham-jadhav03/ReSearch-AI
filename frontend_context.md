@@ -392,11 +392,63 @@ The build was RED after the 2026-10-03 UX session. All detected build + lint err
 
 ---
 
+## Recent Work (2026-10-06 — streaming simplification: removed artificial typing delay)
+
+Source of intent: simplifying the streaming UX to feel like real GPT/Grok/Perplexity streaming.
+
+### Files modified (1)
+
+1. **`StreamingBubble.jsx`** (was ~255 lines, now ~160)
+   - **Removed** `TypedText` component — eliminated artificial 30ms/char character-by-character typing simulation.
+   - **Replaced** with direct rendering of `part.text` — text becomes visible as soon as it arrives from SSE, no delay.
+   - **Kept** `StreamingProgress` component for character count and elapsed time stats.
+   - **Kept** `ToolCallDisplay` component for tool execution visualization.
+   - **Kept** cursor visibility logic (shown when `isStreaming` is true).
+   - **Kept** `processStreamingParts` logic for splitting text/tool parts.
+   - **Kept** `charCount` computation from accumulated text length (for progress indicator).
+   - **Removed** `handleTextUpdate` callback and `onUpdate`/`onComplete` props from `TypedText`.
+   - **Updated** `onUpdate` reference removed from JSX.
+   - **Build**: `npm run build` ✓ green in 1.5s.
+   - **Lint**: `npm run lint` = 0 problems.
+
+### What Changed Operationally
+
+| Before | After |
+|--------|-------|
+| `text-delta` → TypedText simulates typing → text appears at 30ms/char | `text-delta` → useChat accumulates → React renders `part.text` immediately |
+| `setDisplayText(text.slice(0, typed))` per tick | Direct `{part.text}` JSX |
+| Typing cursor animated from `isTyping` state | Cursor shown from `isStreaming` prop |
+| `onUpdate` → `charCount` for progress indicator | `charCount` computed from text length directly |
+| Artificial delay makes user wait ~3s for 100 chars | User sees text as soon as backend sends it |
+
+### Gap Analysis: What This Fixes
+
+- ✅ Text now appears at backend generation speed (real-time), not artificial slowdown
+- ✅ No more "re-typing from scratch" when new SSE frames arrive (prefix-continuation was fragile)
+- ✅ Simpler component: removed `TypedText` effect timer, `setInterval`, `posRef`, `startTimeRef`
+- ✅ Same visual output: cursor, progress bar, tool rendering all preserved
+- ✅ Backend unchanged — only frontend presentation modified
+
+### Verification (2026-10-06)
+
+```
+npm run build   ✓ built in ~1.5s
+npm run lint    ✓ 0 problems
+```
+
+### Deferred / Not-Started
+
+- Full SSE protocol redesign (Phase 2)
+- Research-stage progress visualization (Phase 2-3)
+- Voice input, gesture controls (Phase 3)
+
+---
+
 ## Quick Verification Checklist (run after any change)
 
 ```bash
 cd frontend
-npm run build      # must be green — as of 2026-10-03: ✓ built (~0.5s)
-npm run lint       # as of 2026-10-03: 0 problems (all dead code from the UX pass cleaned)
+npm run build      # must be green — as of 2026-10-06: ✓ built (~1.5s)
+npm run lint       # as of 2026-10-06: 0 problems
 npm run dev        # smoke: landing → register → login → chat → stream → sources footer after reload
 ```
