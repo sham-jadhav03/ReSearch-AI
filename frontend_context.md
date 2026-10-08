@@ -436,6 +436,37 @@ npm run build   ✓ built in ~1.5s
 npm run lint    ✓ 0 problems
 ```
 
+## Recent Work (2026-10-08 — streaming improvement: using MessageRenderer for progressive Markdown rendering)
+
+### Source of intent: Based on analysis and approval from user to improve streaming Markdown rendering to match completed messages.
+
+### Files modified (1)
+
+1. **`StreamingBubble.jsx`** (was ~160 lines, now ~165)
+   - **Replaced** raw text rendering (`<span>{part.text}</span>`) with `MessageRenderer` for progressive Markdown rendering
+   - **Pass** `parts={processed.textParts}` and `citations={[]}` to `MessageRenderer` 
+   - **Preserve** `ToolCallDisplay` for tool parts (unchanged UI)
+   - **Preserve** cursor, progress indicator, and elapsed time display (unchanged)
+   - **Maintain** requestAnimationFrame batching via `useChat.js` (unchanged)
+   - **No change** to backend, SSE protocol, `useChat` buffering, or `streamingParts` structure
+   - **No change** to completed message rendering in `MessageList.jsx` (still uses `MessageRenderer`)
+
+### What Changed Operationally
+
+| Before | After |
+|--------|-------|
+| `text-delta` → useChat accumulates → React renders `{part.text}` as raw text | `text-delta` → useChat accumulates → `MessageRenderer` processes `part.text` through ReactMarkdown with full markdown syntax |
+| Raw text rendering (no markdown processing) | Progressive Markdown rendering (headings, bold, italics, code blocks, tables, links, citations) |
+| Same cursor, progress, tool UI | Same cursor, progress, tool UI (unchanged) |
+| Text appeared immediately but without formatting | Text appears immediately with proper Markdown formatting as it streams |
+
+### Verification (2026-10-08)
+
+```
+npm run build   ✓ built successfully
+npm run lint    ✓ 0 problems
+```
+
 ### Deferred / Not-Started
 
 - Full SSE protocol redesign (Phase 2)

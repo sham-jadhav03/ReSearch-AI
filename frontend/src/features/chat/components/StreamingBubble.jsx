@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import LogoIcon from "../shared/LogoIcon";
 import StreamingProgress from "./StreamingProgress";
+import MessageRenderer from "./MessageRenderer"
 
 // Tool visualization component for better UX
 const ToolCallDisplay = ({ toolName, args, isComplete }) => {
@@ -101,7 +102,7 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
           className="rounded-2xl px-5 py-4 text-[16px] leading-relaxed bg-transparent text-[#ececf1] border border-white/5 backdrop-blur-sm"
           style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)' }}
         >
-          {/* Display tool calls */}
+          {/* Display tool calls — unchanged UI */}
           {processed?.toolParts?.map((part, index) => (
             <ToolCallDisplay
               key={index}
@@ -112,16 +113,13 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
             />
           ))}
 
-          {/* Display streaming text — rendered immediately as text-delta accumulates */}
-          {processed?.textParts?.map((part, index) => (
-            <div key={index} className="mb-2 last:mb-0">
-              {part.text && (
-                <span className="text-[16px] text-[#ececf1] break-all">
-                  {part.text}
-                </span>
-              )}
-            </div>
-          ))}
+          {/* Display streaming text with Markdown rendering — same path as completed messages */}
+          {processed?.textParts.length > 0 && (
+            <MessageRenderer
+              parts={processed.textParts}
+              citations={[]}
+            />
+          )}
 
           {/* Simple cursor for very short streaming or when no text parts */}
           {isStreaming && (!processed?.hasText || streamingParts.length === 0) && (
