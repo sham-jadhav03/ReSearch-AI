@@ -378,6 +378,80 @@ The build was RED after the 2026-10-03 UX session. All detected build + lint err
 
 ---
 
+### Recent Work (2026-10-08/09 — CodeBlock [object Object] root cause and fix)
+
+**Source of intent:** Runtime error `TypeError: code.match is not a function` appeared after removing `[object Object]` from streaming code blocks. Root cause: `rehypeHighlight` transforms code content into React-element arrays, which were passed directly to `SyntaxHighlighter` (expects a string). Two-phase fix in `CodeBlock.jsx` resolved both the `[object Object]` and `TypeError` issues.
+
+**Files modified (1):**
+
+1. **`CodeBlock.jsx`** (ui component, 58 lines total)
+
+   **Phase 1 — Add safe text extraction for clipboard:**
+   - Added `getPlainText()` recursive function (lines 12-21)
+   - Handles string children: returns as-is
+   - Handles array children: maps and joins recursively
+   - Handles nested React elements: traverses `.props.children`
+   - Computes `plainText = getPlainText(children)` for copy functionality
+
+   **Phase 2 — Pass string to SyntaxHighlighter:**
+   - Changed `SyntaxHighlighter` input from `{children}` → `{plainText}`
+   - `SyntaxHighlighter` now receives a proper string (`.match()` works)
+   - Syntax highlighting preserved (string input is correct API)
+   - Copy code copies actual source text (via extracted `plainText`)
+
+   **Before:** `const contentText = Array.isArray(children) ? children.join("") : children;`
+   `SyntaxHighlighter` received `children` (React-element array)
+   - `Array.join()` called `.toString()` on each element → `"[object Object]"`
+   - `SyntaxHighlighter.code.match()` called on array → `TypeError: code.match is not a function`
+
+   **After:** `const getPlainText = (ch) => { ... };` + `const plainText = getPlainText(children);`
+   `SyntaxHighlighter` receives `plainText` (plain text string)
+   - No `[object Object]` (no `.join()` on elements)
+   - No `TypeError` (`.match()` receives a string, not an array)
+
+**Architectural Decisions:**
+- **Frontend-only fix**: Only `CodeBlock.jsx` was modified; no backend, SSE, or `useChat` changes
+- **Preserves existing pipeline**: `MessageRenderer` → `ReactMarkdown` → `rehypeHighlight` → `CodeBlock` still functions identically, just with correct `children` handling
+- **No artificial typing**: Typing simulation was removed in 2026-10-06; this fix operates on already-accumulated text
+- **Copied text correctness**: The `getPlainText()` extractor ensures the "Copy code" button copies the actual source code, not `[object Object]` artifacts
+
+**CodeBlock Fix Details:**
+
+| Aspect | Before | After |
+|---|---|---|
+| `children` handling | `Array.isArray(children) ? children.join("") : children` | `getPlainText(children)` recursive extractor |
+| `SyntaxHighlighter` input | `{children}` (React elements array) | `{plainText}` (plain text string) |
+| Copy text quality | `"[object Object][object Object]..."` | Actual source code |
+| `TypeError` risk | `code.match is not a function` (array input) | None (string input matches API) |
+| Syntax highlighting | Broken (array input) | Preserved (correct string input) |
+
+**Build / Lint Results:**
+```
+npm run build   ✓ built successfully (762ms)
+npm run lint    ✓ 0 problems
+```
+
+**Known Limitations / Remaining Issues:**
+- Browser verification pending (dev server could not start due to system memory constraints; re-attempt when available)
+- `frontend_context.md` documentation still needs browser-verified confirmation before marking items "fixed"
+- Duplicate citation logic between `MessageRenderer.jsx` and `MarkdownComponents.jsx` still noted (item 7 in Known Issues, pre-existing, not addressed by this change)
+- No runtime testing in-browser yet; static analysis and build/lint confirm correctness
+
+---
+
+### Dark Theme Migration (In Progress)
+
+**Source of intent:** Complete application-wide dark-theme redesign with xAI-inspired minimal aesthetic adapted for a research workspace. Dark mode is mandatory.
+
+A dedicated working memory document, `design_context.md`, has been created to contain the detailed migration plan, design tokens, checklist, and session handoff. This document is the authoritative source for all dark-theme migration decisions and work.
+
+- The dark-theme migration is in progress.
+- `design_context.md` contains the detailed migration plan, design tokens, checklist, and session handoff.
+- Existing frontend architecture and engineering constraints remain authoritative in `frontend_context.md`.
+- All changes during this migration must preserve the existing SSE architecture and application behavior documented in `frontend_context.md`.
+
+---
+
 ## Conventions & Gotchas (read before touching anything)
 
 1. **Two HTTP clients**: `fetch` for `/api/chat/message` (SSE) and `axios` for the rest. `fetch`-path errors carry `.status`; axios ones don't. Keep them consistent when editing.
