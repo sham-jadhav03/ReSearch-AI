@@ -7,10 +7,22 @@ const CodeBlock = ({ children, className }) => {
   const language = className?.replace("language-", "") || "plain";
   const languages = className?.replace("language-", "") || null;
 
-  const contentText = Array.isArray(children) ? children.join("") : children;
+  // Safely extract plain text from children for clipboard.
+  // Handles string, array of strings/elements, and nested React elements.
+  const getPlainText = (ch) => {
+    if (typeof ch === "string") return ch;
+    if (Array.isArray(ch)) {
+      return ch.map(getPlainText).join("");
+    }
+    if (ch && typeof ch === "object" && ch.props) {
+      return getPlainText(ch.props.children);
+    }
+    return "";
+  };
+  const plainText = getPlainText(children);
 
   const onCopy = async () => {
-    await navigator.clipboard.writeText(contentText);
+    await navigator.clipboard.writeText(plainText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -35,7 +47,7 @@ const CodeBlock = ({ children, className }) => {
       </div>
       <div className="p-4 overflow-x-auto">
         <SyntaxHighlighter language={language} style={oneDark} PreTag={"div"}>
-          {contentText}
+          {plainText}
         </SyntaxHighlighter>
       </div>
     </div>
