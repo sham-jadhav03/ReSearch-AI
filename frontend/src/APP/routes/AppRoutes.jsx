@@ -16,7 +16,7 @@ const LoadingFallback = () => (
     variant="spinner"
     size="medium"
     text=""
-    className="h-screen bg-[#0f0f10] text-[#34d399]"
+    className="h-screen bg-app text-[#34d399]"
   />
 );
 

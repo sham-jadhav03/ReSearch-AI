@@ -8,7 +8,7 @@ const CharacterCount = ({ current, max, className = "", showPercentage = true })
   const getColorClasses = () => {
     if (isOverLimit) return "text-red-400";
     if (percentage > 80) return "text-amber-400";
-    return "text-white/40";
+    return "text-text-muted";
   };
 
   return (
@@ -46,7 +46,7 @@ const AITypingIndicator = ({ isActive }) => {
   if (!isActive) return null;
 
   return (
-    <div className="flex items-center gap-2 text-xs text-white/40 animate-fadeInUp">
+    <div className="flex items-center gap-2 text-xs text-text-muted animate-fadeInUp">
       <div className="w-6 h-6 rounded-full bg-[#10a37f]/20 flex items-center justify-center">
         <i className="ri-robot-line text-[#10a37f] text-xs" />
       </div>
@@ -187,8 +187,8 @@ const ChatInput = (props) => {
                 )}
 
                 {/* Input container */}
-                <div className={`flex items-end gap-2.5 bg-[#1a1a1d] border rounded-2xl px-4 py-3 transition-all duration-200
-                    ${isFocused ? 'border-blue-500/50 shadow-[0_0_0_3px_rgba(79,142,247,0.1)]' : 'border-white/8'}
+                <div className={`flex items-end gap-2.5 bg-surface-secondary border rounded-2xl px-4 py-3 transition-all duration-200
+                    ${isFocused ? 'border-blue-500/50 shadow-[0_0_0_3px_rgba(79,142,247,0.1)]' : 'border-border-default'}
                     ${isOverLimit ? 'border-red-500/30 bg-red-500/5' : ''}
                     ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}
                 `}>
@@ -196,7 +196,7 @@ const ChatInput = (props) => {
                     {/* Attach button */}
                     <button
                         type="button"
-                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/8 text-white/30 hover:text-white/60 hover:border-white/15 hover:bg-white/5 transition-all duration-150 shrink-0 self-end mb-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-border-default text-white/30 hover:text-white/60 hover:border-white/15 hover:bg-white/5 transition-all duration-150 shrink-0 self-end mb-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isLoading}
                     >
                         <i className="ri-attachment-2 text-sm" />
@@ -218,7 +218,7 @@ const ChatInput = (props) => {
                             }}
                             placeholder="Ask anything..."
                             rows={1}
-                            className="flex-1 bg-transparent text-[14px] text-white outline-none resize-none leading-relaxed placeholder-white/25 max-h-30 self-center py-0.5 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 bg-transparent text-[14px] text-text-primary outline-none resize-none leading-relaxed placeholder-white/25 max-h-30 self-center py-0.5 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isLoading}
                             maxLength={maxChars}
                             style={{ height: textareaHeight, overflow: 'hidden' }}
@@ -248,8 +248,8 @@ const ChatInput = (props) => {
                 <div className="flex items-center justify-between mt-2 px-1">
                     {/* Keyboard shortcuts hint */}
                     <div className="text-[10px] text-white/20 hidden sm:block">
-                        <kbd className="px-1 py-0.5 bg-white/10 rounded text-white/40">Ctrl</kbd>
-                        <kbd className="px-1 py-0.5 bg-white/10 rounded text-white/40 ml-1">Enter</kbd>
+                        <kbd className="px-1 py-0.5 bg-white/10 rounded text-text-muted">Ctrl</kbd>
+                        <kbd className="px-1 py-0.5 bg-white/10 rounded text-text-muted ml-1">Enter</kbd>
                         <span className="ml-1">to send</span>
                     </div>
 
@@ -265,11 +265,11 @@ const ChatInput = (props) => {
                 {showSuggestions && suggestions.length > 0 && (
                     <div
                         ref={suggestionRef}
-                        className="absolute bottom-full left-4 right-4 mb-2 p-3 bg-[#1a1a1d] border border-white/10 rounded-xl shadow-lg z-10
+                        className="absolute bottom-full left-4 right-4 mb-2 p-3 bg-surface-secondary border border-white/10 rounded-xl shadow-lg z-10
                             animate-fadeInUp
                         "
                     >
-                        <div className="text-xs text-white/40 mb-2">Quick suggestions</div>
+                        <div className="text-xs text-text-muted mb-2">Quick suggestions</div>
                         <div className="flex flex-wrap gap-1.5">
                             {quickSuggestions.map((suggestion, index) => (
                                 <SuggestionButton

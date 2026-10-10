@@ -114,7 +114,7 @@ const DashBoard = () => {
   const isEmpty = currentMessages.length === 0 && !isStreaming && !isLoading;
 
   return (
-    <main className="flex h-screen w-full overflow-hidden bg-[#0f0f10] text-white">
+    <main className="flex h-screen w-full overflow-hidden bg-app text-white">
       {/* Sidebar*/}
       <Sidebar
         deleteChat={deleteChat}
@@ -129,7 +129,7 @@ const DashBoard = () => {
       {/* Main Chat Area */}
       <section className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-white/[0.07] bg-[#161618] shrink-0">
+        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-border-default bg-surface-primary shrink-0">
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
             aria-label="Open sidebar"
@@ -138,7 +138,7 @@ const DashBoard = () => {
             <i className="ri-menu-line text-lg" />
           </button>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-          <span className="text-[13px] text-[#888892] truncate">
+          <span className="text-[13px] text-text-secondary truncate">
             {currentChatTitle || "New Chat"}
           </span>
         </div>
@@ -180,7 +180,7 @@ const DashBoard = () => {
         </div>
 
         {/* Input Area */}
-        <div className="shrink-0 px-4 pb-5 pt-3 bg-[#0f0f10] border-t border-white/5">
+        <div className="shrink-0 px-4 pb-5 pt-3 bg-app border-t border-border-default">
           <ChatInput
             chatInput={chatInput}
             setChatInput={setChatInput}

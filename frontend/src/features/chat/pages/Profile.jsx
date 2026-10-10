@@ -18,8 +18,8 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0f0f10] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#161618] border border-white/[0.07] rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+    <div className="min-h-screen w-full bg-app flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-surface-primary border border-border-default rounded-3xl p-8 shadow-2xl relative overflow-hidden">
         {/* Glow decoration */}
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl" />
@@ -36,7 +36,7 @@ const Profile = () => {
           <h2 className="text-2xl font-bold text-white mb-1">
             {user?.username || 'User Profile'}
           </h2>
-          <p className="text-sm text-[#888892] mb-8 font-medium">
+          <p className="text-sm text-text-secondary mb-8 font-medium">
             {user?.email || 'No email provided'}
           </p>
 

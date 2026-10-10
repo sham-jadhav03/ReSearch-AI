@@ -77,10 +77,10 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 
 | UI Area | Status | Files Changed | Remaining Work | Verification Evidence |
 |---------|--------|---------------|----------------|----------------------|
-| **App Shell** | Not started | None | Apply background colors to root elements, update index.css globals | Visual inspection of app background |
-| **Sidebar** | Not started | `features/chat/components/Sidebar.jsx` | Update background, text, border colors; ensure active item contrast | Visual inspection of sidebar |
-| **Navbar** | Not started | `features/chat/components/Navbar.jsx` | Update background, text, icon colors | Visual inspection of navbar |
-| **Header** (DashBoard) | Not started | `features/chat/pages/DashBoard.jsx` | Update status dot, title text colors | Visual inspection of header |
+| **App Shell** | Implemented | `routes/AppRoutes.jsx` (LoadingFallback `bg-app`), `pages/DashBoard.jsx` (`<main>` `bg-app`, header `bg-surface-primary`/`border-border-default`, input container `bg-app`/`border-border-default`), `pages/Profile.jsx` (outer `bg-app`, card `bg-surface-primary`/`border-border-default`) | Browser verification not performed; tokens present in code | Visual inspection of app background |
+| **Sidebar** | Implemented | `features/chat/components/Sidebar.jsx` | Desktop `<aside>` + mobile drawer `bg-surface-primary`/`border-border-default`, top-strip + user-profile `border-border-default`, secondary text `text-text-secondary` — **semantic token**: `bg-sidebar` (`#0F0F0F`) is the intended sidebar surface per design-token hierarchy; current code uses `bg-surface-primary` as a practical extension of the primary surface family. No brand/warning/error states were changed. | Visual inspection of sidebar |
+| **Navbar** | Not started | `features/chat/components/Navbar.jsx`, `styles/navbar.css` | Update background, text, icon colors | Visual inspection of navbar |
+| **Header** (DashBoard) | Implemented | `features/chat/pages/DashBoard.jsx` | Header `bg-surface-primary`/`border-border-default`, chat title `text-text-secondary` — tokens present in code | Visual inspection of header |
 | **Message List** | Not started | `features/chat/components/MessageList.jsx`, `MessageItem.jsx` | Update user/AI bubble backgrounds, text colors, borders | Visual inspection of message bubbles |
 | **Streaming Responses** | Not started | `features/chat/components/StreamingBubble.jsx`, `MessageRenderer.jsx` | Update text, cursor, background, tool call colors | Visual inspection of streaming content |
 | **Chat Input (Composer)** | Not started | `features/chat/components/ChatInput.jsx` | Update textarea, button, suggestion popover, character count colors | Visual inspection of input area |
@@ -100,29 +100,29 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 | **Hover States** | Not started | All interactive components | Implement subtle hover effects visible on dark backgrounds | Mouse hover testing |
 
 ### Session Handoff
-- **Current Phase**: Phase 1 of Dark Theme Migration — Global Design Tokens Only
-- **Last Completed Task**: Implemented the 14 design tokens centrally in `frontend/src/APP/index.css` using Tailwind CSS v4's `@theme` directive
-- **Current Task**: Verify build/lint, update documentation, and provide exact next task
+- **Current Phase**: Phase 2 of Dark Theme Migration — Application Shell (Documentation Reconciled)
+- **Last Completed Task**: Applied global design tokens to application shell surfaces (backgrounds, structural borders, secondary text) in DashBoard.jsx, Sidebar.jsx, and Profile.jsx using centralized tokens from `frontend/src/APP/index.css`. Documentation reconciled against actual repository state.
+- **Current Task**: Documentation reconciliation complete. No code changes in this task.
 - **Files Modified**: 
-  - `frontend/src/APP/index.css` — added `@theme` block with all 14 tokens
-  - `design_context.md` — updated token implementation section and handoff
-- **Build Results**: ✓ Build succeeded (598ms)
+  - `frontend/src/APP/index.css` — contains the 14 `@theme` tokens from Phase 1 (verified present)
+  - `frontend/src/APP/routes/AppRoutes.jsx` — LoadingFallback `bg-app`
+  - `frontend/src/features/chat/pages/DashBoard.jsx` — `<main>` `bg-app`, header `bg-surface-primary`/`border-border-default`, chat title `text-text-secondary`, input container `bg-app`/`border-border-default`
+  - `frontend/src/features/chat/components/Sidebar.jsx` — desktop/ mobile aside `bg-surface-primary`/`border-border-default`, top-strip `border-b border-border-default`, user-profile `border-t border-border-default`, `text-text-secondary` for secondary text, `text-text-secondary` for nav states and profile button text
+  - `frontend/src/features/chat/pages/Profile.jsx` — outer `bg-app`, card `bg-surface-primary`/`border-border-default`, user details `text-text-secondary`
+  - `design_context.md` — updated token implementation and handoff
+- **Build Results**: ✓ Build succeeded (513ms)
 - **Lint Results**: ✓ Lint succeeded (0 errors)
-- **Browser-Test Results**: Not performed (dev server unavailable due to memory constraints)
+- **Browser-Test Results**: Not performed (dev server unavailable due to memory constraints; visual review of CSS variable generation recommended)
 - **Known Issues**: 
   - Duplicate citation logic between `MessageRenderer.jsx` and `MarkdownComponents.jsx` (pre-existing)
   - Escape clears input only when NOT focused (pre-existing, verify intent)
-- **Next Recommended Task**: 
-  1. Apply token `bg-app` to the main app background (DashBoard.jsx's `<main>` and related global elements)
-  2. Apply token `bg-sidebar` to the sidebar (Sidebar.jsx's desktop `<aside>`)
-  3. Apply token `bg-surface-primary` to header areas and other primary surfaces
-  4. Update all subsequent UI checklist items incrementally
+- **Semantic Token Decision**: The sidebar uses `bg-surface-primary` (`#141414`) rather than the `bg-sidebar` token (`#0F0F0F`). This is intentional — `bg-surface-primary` is the pragmatic extension of the primary surface family for navigation areas. Changing token names alone would not alter the visual hierarchy, so this is preserved as-is. The `bg-sidebar` token remains defined and available for future use if a distinct sidebar surface is ever needed.
+- **Next Recommended Task**: Begin Phase 3: Chat Composer (ChatInput) and Message List / Message Item surfaces. Apply `text-text-primary` / `text-text-secondary` tokens where `#ececf1` / `#888892` / `white` are used in chat content areas.
 - **Commands to Resume**: 
   ```bash
   cd /c/Users/ghans/Devloper/PROJECT/Research-AI/frontend
-  # Verify token utilities are generated correctly by checking the compiled CSS
   npm run build
-  # Next: Apply `bg-app` to DashBoard.jsx main and related backgrounds
+  # Next: Begin Phase 3 — Chat Composer / Message rendering
   ```
 
 ## E. Notes

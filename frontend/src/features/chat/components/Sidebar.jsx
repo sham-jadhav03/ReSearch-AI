@@ -34,7 +34,7 @@ const Sidebar = (props) => {
 
   const sidebarContent = (
     <>
-      <div className="flex items-center justify-between px-4 py-5 border-b border-white/[0.07]">
+      <div className="flex items-center justify-between px-4 py-5 border-b border-border-default">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
             <LogoIcon size={16} />
@@ -58,7 +58,7 @@ const Sidebar = (props) => {
       <div className="px-3 pt-3">
         <button
           onClick={handleNewChat}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-dashed border-white/13 text-[#888892] text-[13px] hover:border-green-300 hover:text-green-400 hover:bg-blue-500/8 transition-all duration-200 cursor-pointer"
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-dashed border-border-default text-text-secondary text-[13px] hover:border-green-300 hover:text-green-400 hover:bg-blue-500/8 transition-all duration-200 cursor-pointer"
         >
           <i className="ri-add-line text-base" />
           New chat
@@ -80,7 +80,7 @@ const Sidebar = (props) => {
               ${
                 currentChatId === chat.id
                   ? "bg-blue-500/12 border-blue-500/2 text-white"
-                  : "border-transparent text-[#888892] hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90"
+                  : "border-transparent text-text-secondary hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90"
               }`}
           >
             <span className="truncate flex-1 text-left">{chat.title}</span>
@@ -95,20 +95,20 @@ const Sidebar = (props) => {
       </div>
 
       {/* User profile */}
-      <div className="mt-auto border-t border-white/[0.07] flex items-center justify-between">
+      <div className="mt-auto border-t border-border-default flex items-center justify-between">
         <button
           onClick={() => {
             if (onClose) onClose();
             navigate("/profile");
           }}
-          className="cursor-pointer flex items-center gap-2.5 px-4 py-5 w-full hover:bg-white/5 hover:text-white text-[#888892] transition-all duration-150"
+          className="cursor-pointer flex items-center gap-2.5 px-4 py-5 w-full hover:bg-white/5 hover:text-white text-text-secondary transition-all duration-150"
         >
           <i className="ri-user-3-line text-base"></i>
           <span className="font-semibold text-white">Profile</span>
         </button>
         <button
           onClick={onLogout}
-          className="cursor-pointer flex items-center justify-center px-4 py-5 hover:bg-red-500/10 text-red-400 border-l border-white/[0.07] transition-all duration-150 h-full self-stretch"
+          className="cursor-pointer flex items-center justify-center px-4 py-5 hover:bg-red-500/10 text-red-400 border-l border-border-default transition-all duration-150 h-full self-stretch"
           title="Log Out"
         >
           <i className="ri-logout-box-r-line text-base"></i>
@@ -120,7 +120,7 @@ const Sidebar = (props) => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-62.5 min-w-62.5 h-full bg-[#161618] border-r border-white/[0.07]">
+      <aside className="hidden md:flex flex-col w-62.5 min-w-62.5 h-full bg-surface-primary border-r border-border-default">
         {sidebarContent}
       </aside>
 
@@ -133,7 +133,7 @@ const Sidebar = (props) => {
             onClick={onClose}
           />
           {/* Drawer content */}
-          <aside className="relative flex flex-col w-72 max-w-[85vw] h-full bg-[#161618] border-r border-white/[0.07] z-10 shadow-2xl">
+          <aside className="relative flex flex-col w-72 max-w-[85vw] h-full bg-surface-primary border-r border-border-default z-10 shadow-2xl">
             {sidebarContent}
           </aside>
         </div>

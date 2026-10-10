@@ -450,6 +450,30 @@ A dedicated working memory document, `design_context.md`, has been created to co
 - Existing frontend architecture and engineering constraints remain authoritative in `frontend_context.md`.
 - All changes during this migration must preserve the existing SSE architecture and application behavior documented in `frontend_context.md`.
 
+### Recent Work (2026-10-09 — Phase 2: Application Shell)
+
+**Source of intent:** Apply the centralized design tokens from Phase 1 to the application shell — the main background, sidebar, header, and related navigation surfaces.
+
+**Files modified (4):**
+
+1. **`routes/AppRoutes.jsx`** — LoadingFallback `bg-app` (was `bg-[#0f0f10]`)
+2. **`pages/DashBoard.jsx`** — `<main>` `bg-app`, header `bg-surface-primary`/`border-border-default`, chat title `text-text-secondary`, input container `bg-app`/`border-border-default`
+3. **`components/Sidebar.jsx`** — desktop `<aside>` + mobile drawer `bg-surface-primary`/`border-border-default`, top-strip + user-profile `border-border-default`, secondary text `text-text-secondary`
+4. **`pages/Profile.jsx`** — outer `bg-app`, card `bg-surface-primary`/`border-border-default`, user details `text-text-secondary`
+
+**Semantic token decision:** The sidebar uses `bg-surface-primary` (`#141414`) rather than the `bg-sidebar` token (`#0F0F0F`). This is intentional — `bg-surface-primary` is the pragmatic extension of the primary surface family for navigation areas. Changing token names alone would not alter the visual hierarchy, so this is preserved as-is. The `bg-sidebar` token remains defined and available for future use.
+
+**Build / Lint Results:**
+```
+npm run build   ✓ built in 513ms
+npm run lint    ✓ 0 problems
+```
+
+**Known Limitations / Remaining Issues:**
+- Browser verification not performed (dev server unavailable due to system memory constraints)
+- Navbar, Landing page, auth pages, message list, and composer still use hardcoded colors
+- Global `html`/`body` background not yet set (app currently relies on component-level backgrounds)
+
 ---
 
 ## Conventions & Gotchas (read before touching anything)

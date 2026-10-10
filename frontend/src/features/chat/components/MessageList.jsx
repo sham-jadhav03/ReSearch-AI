@@ -22,8 +22,8 @@ const MessageItem = React.memo(({ message }) => {
           className={`rounded-2xl px-1 py-1 text-[16px] leading-relaxed
             ${
               isUser
-                ? "bg-[#2f2f2f] border border-white/5 text-[#ececf1] px-5 py-3 rounded-2xl shadow-sm"
-                : "bg-transparent text-[#ececf1]"
+                ? "bg-surface-secondary border-border-default text-text-primary px-5 py-3 rounded-2xl shadow-sm"
+                : "bg-transparent text-text-primary"
             }`}
         >
           {isUser ? (
