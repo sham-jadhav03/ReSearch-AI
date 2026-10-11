@@ -28,14 +28,14 @@ const CodeBlock = ({ children, className }) => {
   };
 
   return (
-    <div className="group relative my-6 overflow-hidden rounded-xl bg-[#0d0d0f] border border-white/10 shadow-lg">
-      <div className="flex items-center justify-between bg-[#161617] px-4 py-2.5 text-xs text-white/50 border-b border-white/5">
+    <div className="group relative my-6 overflow-hidden rounded-lg border border-border-default bg-code-bg shadow-lg shadow-black/20">
+      <div className="flex items-center justify-between border-b border-border-default bg-surface-primary px-4 py-2.5 text-xs text-text-secondary">
         {languages && (
           <span className="font-mono uppercase tracking-wider">{language}</span>
         )}
         <button
           onClick={onCopy}
-          className="flex items-center gap-1.5 transition-colors hover:text-white"
+          className="flex items-center gap-1.5 rounded px-1.5 py-1 transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           <i
             className={
@@ -45,8 +45,17 @@ const CodeBlock = ({ children, className }) => {
           {copied ? "Copied!" : "Copy code"}
         </button>
       </div>
-      <div className="p-4 overflow-x-auto">
-        <SyntaxHighlighter language={language} style={oneDark} PreTag={"div"}>
+      <div className="overflow-x-auto p-4">
+        <SyntaxHighlighter
+          language={language}
+          style={oneDark}
+          PreTag={"div"}
+          customStyle={{
+            margin: 0,
+            background: "transparent",
+            color: "var(--color-text-primary)",
+          }}
+        >
           {plainText}
         </SyntaxHighlighter>
       </div>

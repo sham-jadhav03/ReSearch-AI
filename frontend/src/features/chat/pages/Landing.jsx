@@ -104,7 +104,7 @@ const Landing = () => {
       <footer className="footer">
         <div className="footer__logo">
           <div className="footer__logo-icon">
-            <LogoIcon size={12} />
+            <LogoIcon size={12} color="var(--color-primary-fg)" />
           </div>
           <span className="footer__logo-text">ResearchAI</span>
         </div>

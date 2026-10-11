@@ -11,7 +11,7 @@ const Navbar = () => {
       {/* Logo */}
       <div className="navbar__logo">
         <div className="navbar__logo-icon">
-          <LogoIcon size={16} />
+          <LogoIcon size={16} color="var(--color-primary-fg)" />
         </div>
         <span className="navbar__logo-text">ResearchAI</span>
       </div>

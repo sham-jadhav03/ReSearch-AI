@@ -8,9 +8,9 @@ const CitationToolTips = ({ citation }) => {
     <>
       <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 pointer-events-auto block">
         {/* Arrow */}
-        <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#1e1e22] border-r border-b border-white/10 rotate-45 block" />
+        <span className="absolute -bottom-1.5 left-1/2 block h-3 w-3 -translate-x-1/2 rotate-45 border-r border-b border-border-default bg-surface-elevated" />
         {/* Card */}
-        <span className="bg-[#1e1e22] border border-white/10 rounded-xl p-3.5 shadow-2xl block">
+        <span className="block rounded-lg border border-border-default bg-surface-elevated p-3.5 shadow-2xl shadow-black/40">
           {/* Domain + favicon */}
           <span className="flex items-center gap-2 mb-2">
             <img
@@ -23,14 +23,14 @@ const CitationToolTips = ({ citation }) => {
                 e.target.style.display = "none";
               }}
             />
-            <span className="text-[11px] text-white/40 truncate">{domain}</span>
+            <span className="truncate text-[11px] text-text-muted">{domain}</span>
           </span>
           {/* Title */}
-          <span className="text-[13px] font-medium text-white leading-snug line-clamp-2 mb-1 block">
+          <span className="mb-1 block line-clamp-2 text-[13px] font-medium leading-snug text-text-primary">
             {citation.title}
           </span>
           {/* URL preview */}
-          <span className="text-[11px] text-blue-400/70 truncate block">
+          <span className="block truncate text-[11px] text-text-secondary">
             {citation.url}
           </span>
         </span>

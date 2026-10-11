@@ -20,22 +20,22 @@ const ToolCallDisplay = ({ toolName, args, isComplete }) => {
   };
 
   return (
-    <div className="my-3 p-3 rounded-lg bg-linear-to-r from-purple-500/10 to-blue-500/10 border border-white/10 animate-fadeInUp">
+    <div className="my-3 animate-fadeInUp rounded-lg border border-border-default bg-surface-primary p-3">
       <div className="flex items-center gap-2 mb-2">
-        <i className={`${getToolIcon(toolName)} text-purple-400 text-sm`} />
-        <span className="text-sm font-medium text-purple-300">
+        <i className={`${getToolIcon(toolName)} text-sm text-text-primary`} />
+        <span className="text-sm font-medium text-text-primary">
           {isComplete ? '✓ ' : '🔍 '}{toolName} called
         </span>
         {!isComplete && (
-          <span className="text-xs text-white/40 ml-auto">
+          <span className="ml-auto text-xs text-text-muted">
             Processing...
           </span>
         )}
       </div>
       {args && (
-        <div className="ml-6 pl-2 border-l border-white/10">
-          <span className="text-xs text-white/60">Query:</span>
-          <p className="text-sm text-white/80 mt-1 line-clamp-2">
+        <div className="ml-6 border-l border-border-default pl-2">
+          <span className="text-xs text-text-muted">Query:</span>
+          <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
             {typeof args === 'string' ? args : JSON.stringify(args, null, 2).slice(0, 100)}
           </p>
         </div>
@@ -43,8 +43,8 @@ const ToolCallDisplay = ({ toolName, args, isComplete }) => {
       {!isComplete && (
         <div className="ml-6 mt-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-            <span className="text-xs text-white/50">Executing</span>
+            <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+            <span className="text-xs text-text-muted">Executing</span>
           </div>
         </div>
       )}
@@ -92,15 +92,14 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
 
   return (
     <div className="flex justify-start mb-2 relative">
-      <div className="w-8 h-8 rounded-full bg-[#10a37f] border border-white/10 flex items-center justify-center shrink-0 mr-4 mt-0.5 self-start shadow-sm">
-        <LogoIcon size={16} color="white" />
+      <div className="mr-4 mt-0.5 flex h-8 w-8 shrink-0 self-start items-center justify-center rounded-lg border border-border-strong bg-primary">
+        <LogoIcon size={16} color="var(--color-primary-fg)" />
       </div>
 
       <div className="flex flex-col max-w-[85%] relative">
         {/* Main bubble content */}
         <div
-          className="rounded-2xl px-5 py-4 text-[16px] leading-relaxed bg-transparent text-[#ececf1] border border-white/5 backdrop-blur-sm"
-          style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)' }}
+          className="rounded-lg border border-border-default bg-transparent px-5 py-4 text-[16px] leading-relaxed text-text-primary"
         >
           {/* Display tool calls — unchanged UI */}
           {processed?.toolParts?.map((part, index) => (
@@ -124,7 +123,7 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
           {/* Simple cursor for very short streaming or when no text parts */}
           {isStreaming && (!processed?.hasText || streamingParts.length === 0) && (
             <span
-              className="inline-block w-2 h-5 bg-blue-400 ml-1 animate-pulse rounded-[1px] align-text-bottom"
+              className="ml-1 inline-block h-5 w-2 animate-pulse rounded-[1px] bg-text-primary align-text-bottom"
               style={{ animation: 'blink 1.5s step-end infinite' }}
             />
           )}
@@ -144,16 +143,16 @@ const StreamingBubble = ({ streamingParts, isStreaming, elapsedTime }) => {
 
         {/* Enhanced loading indicator when no content but streaming */}
         {isStreaming && !streamingParts.length && showAdvancedLoader && (
-          <div className="mt-3 flex items-center gap-3 text-white/50 animate-fadeInUp">
-            <div className="w-8 h-8 rounded-full bg-[#10a37f]/20 flex items-center justify-center">
-              <LogoIcon size={14} color="#10a37f" />
+          <div className="mt-3 flex animate-fadeInUp items-center gap-3 text-text-muted">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-default bg-surface-secondary">
+              <LogoIcon size={14} color="var(--color-text-primary)" />
             </div>
             <span className="text-sm">AI is thinking</span>
             <div className="flex gap-1">
               {[0, 150, 300].map((delay, i) => (
                 <span
                   key={i}
-                  className="w-2 h-2 rounded-full bg-[#10a37f]/50 animate-bounce"
+                  className="h-2 w-2 animate-bounce rounded-full bg-text-muted"
                   style={{ animationDelay: `${delay}ms` }}
                 />
               ))}

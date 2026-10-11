@@ -16,7 +16,7 @@ const CitationChip = ({ citation, index }) => {
         href={citation.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center justify-center w-5 h-5 mx-0.5 rounded-full bg-white/8 border border-white/10 text-[10px] font-semibold text-white/70 hover:bg-white/15 hover:text-white transition-all no-underline shrink-0 cursor-pointer"
+        className="mx-0.5 inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border-default bg-surface-secondary text-[10px] font-semibold text-text-secondary no-underline transition-colors hover:border-border-strong hover:bg-surface-elevated hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-app"
       >
         {index}
       </a>

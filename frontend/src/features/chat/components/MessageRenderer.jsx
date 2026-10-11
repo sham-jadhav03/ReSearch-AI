@@ -43,19 +43,19 @@ const EnhancedCodeBlock = ({ children, className, language }) => {
 
   return (
     <div className="relative mb-4">
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-2 text-xs font-medium">
-          <i className="ri-code-s-slash-line text-blue-400" />
+      <div className="mb-2 flex items-start justify-between">
+        <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
+          <i className="ri-code-s-slash-line text-text-primary" />
           <span className="text-sm">{language || 'plaintext'}</span>
         </div>
         <button
           onClick={handleCopy}
-          className="text-xs px-2 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 transition-colors"
+          className="rounded border border-border-default bg-surface-secondary px-2 py-1 text-xs text-text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           {isCopied ? (
             <i className="ri-check-line text-green-400" />
           ) : (
-            <i className="ri-file-copy-line text-blue-300" />
+            <i className="ri-file-copy-line text-text-primary" />
           )}
           <span className="ml-1">{isCopied ? 'Copied!' : 'Copy code'}</span>
         </button>
@@ -71,18 +71,18 @@ const EnhancedCodeBlock = ({ children, className, language }) => {
 const createEnhancedMarkdownComponents = (citations = []) => {
   const baseComponents = {
     p: ({ children }) => (
-      <div className="mb-4 last:mb-0 leading-[1.7] text-[#ececf1]">
+      <div className="mb-4 last:mb-0 leading-[1.7] text-text-primary">
         {children}
       </div>
     ),
     ul: ({ children }) => (
-      <ul className="mb-4 list-disc pl-5 space-y-1 text-[#ececf1]">{children}</ul>
+      <ul className="mb-4 list-disc space-y-1 pl-5 text-text-primary">{children}</ul>
     ),
     ol: ({ children }) => (
-      <ol className="mb-4 list-decimal pl-5 space-y-1 text-[#ececf1]">{children}</ol>
+      <ol className="mb-4 list-decimal space-y-1 pl-5 text-text-primary">{children}</ol>
     ),
     li: ({ children }) => (
-      <li className="leading-relaxed text-[#ececf1]">{children}</li>
+      <li className="leading-relaxed text-text-primary">{children}</li>
     ),
     code: ({ children, className, language }) => {
       const isBlock =
@@ -95,40 +95,40 @@ const createEnhancedMarkdownComponents = (citations = []) => {
           language={language}
         />
       ) : (
-        <code className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-white/5 border border-white/10 text-blue-300">
+        <code className="inline-flex items-center rounded border border-border-default bg-code-bg px-1.5 py-0.5 text-xs font-mono text-text-primary">
           {children}
         </code>
       );
     },
     pre: ({ children }) => <>{children}</>,
     h1: ({ children }) => (
-      <h1 className="text-2xl font-bold mb-4 mt-6 text-white tracking-tight">
+      <h1 className="mb-4 mt-6 text-2xl font-bold tracking-tight text-text-primary">
         {children}
       </h1>
     ),
     h2: ({ children }) => (
-      <h2 className="text-xl font-bold mb-3 mt-5 text-white tracking-tight">
+      <h2 className="mb-3 mt-5 text-xl font-bold tracking-tight text-text-primary">
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3 className="text-lg font-bold mb-2 mt-4 text-white/90">
+      <h3 className="mb-2 mt-4 text-lg font-bold text-text-primary">
         {children}
       </h3>
     ),
     h4: ({ children }) => (
-      <h4 className="text-base font-semibold mb-1 mt-3 text-white/80">
+      <h4 className="mb-1 mt-3 text-base font-semibold text-text-secondary">
         {children}
       </h4>
     ),
     strong: ({ children }) => (
-      <strong className="font-bold text-white">{children}</strong>
+      <strong className="font-bold text-text-primary">{children}</strong>
     ),
     em: ({ children }) => (
-      <em className="italic text-white/90">{children}</em>
+      <em className="italic text-text-secondary">{children}</em>
     ),
     blockquote: ({ children }) => (
-      <blockquote className="border-l-4 border-blue-500/30 pl-4 my-4 italic text-[#d1d1d6] py-2 bg-white/5 rounded-r-lg">
+      <blockquote className="my-4 rounded-r-lg border-l-4 border-border-strong bg-surface-primary py-2 pl-4 italic text-text-secondary">
         {children}
       </blockquote>
     ),
@@ -137,39 +137,39 @@ const createEnhancedMarkdownComponents = (citations = []) => {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-400 hover:text-blue-300 underline underline-offset-2 decoration-blue-500/20 font-medium transition-colors break-all"
+        className="break-all font-medium text-text-primary underline decoration-border-strong underline-offset-2 transition-colors hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
       >
         {children}
       </a>
     ),
     table: ({ children }) => (
-      <div className="my-4 overflow-x-auto rounded-lg border border-white/10">
+      <div className="my-4 overflow-x-auto rounded-lg border border-border-default">
         <table className="w-full text-sm text-left border-collapse">
           {children}
         </table>
       </div>
     ),
     thead: ({ children }) => (
-      <thead className="bg-white/5 text-white font-medium border-b border-white/10">{children}</thead>
+      <thead className="border-b border-border-default bg-surface-secondary font-medium text-text-primary">{children}</thead>
     ),
-    tbody: ({ children }) => <tbody className="divide-y divide-white/10">{children}</tbody>,
+    tbody: ({ children }) => <tbody className="divide-y divide-border-default">{children}</tbody>,
     th: ({ children }) => (
-      <th className="px-3 py-2 text-left font-medium text-white border-b border-white/10">{children}</th>
+      <th className="border-b border-border-default px-3 py-2 text-left font-medium text-text-primary">{children}</th>
     ),
     td: ({ children }) => (
-      <td className="px-3 py-2 text-left text-white/90 border-b border-white/10">{children}</td>
+      <td className="border-b border-border-default px-3 py-2 text-left text-text-secondary">{children}</td>
     ),
-    hr: () => <hr className="my-4 border-white/10" />,
+    hr: () => <hr className="my-4 border-border-default" />,
     img: ({ src, alt, title }) => (
       <div className="my-4 text-center">
         <img
           src={src}
           alt={alt}
           title={title}
-          className="max-w-full rounded-lg border border-white/10"
+          className="max-w-full rounded-lg border border-border-default"
           style={{ maxHeight: '400px' }}
         />
-        {title && <div className="mt-1 text-xs text-white/50">{title}</div>}
+        {title && <div className="mt-1 text-xs text-text-muted">{title}</div>}
       </div>
     )
   };
@@ -178,12 +178,12 @@ const createEnhancedMarkdownComponents = (citations = []) => {
   const componentsWithCitations = {
     ...baseComponents,
     p: ({ children }) => (
-      <div className="mb-4 last:mb-0 leading-[1.7] text-[#ececf1]">
+      <div className="mb-4 last:mb-0 leading-[1.7] text-text-primary">
         {children}
       </div>
     ),
     blockquote: ({ children }) => (
-      <blockquote className="border-l-4 border-blue-500/30 pl-4 my-4 italic text-[#d1d1d6] py-2 bg-white/5 rounded-r-lg">
+      <blockquote className="my-4 rounded-r-lg border-l-4 border-border-strong bg-surface-primary py-2 pl-4 italic text-text-secondary">
         {children}
       </blockquote>
     )
@@ -204,7 +204,7 @@ const createEnhancedMarkdownComponents = (citations = []) => {
               return citation ? (
                 <CitationChip key={index} citation={citation} index={citationIndex} />
               ) : (
-                <span key={`placeholder-${index}`} className="inline-flex items-center justify-center w-5 h-5 mx-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-semibold text-white/50 shrink-0 cursor-default">
+                <span key={`placeholder-${index}`} className="mx-0.5 inline-flex h-5 w-5 shrink-0 cursor-default items-center justify-center rounded-full border border-border-default bg-surface-secondary text-[10px] font-semibold text-text-muted">
                   {citationIndex}
                 </span>
               );
@@ -263,14 +263,14 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
             return (
               <div
                 key={index}
-                className="flex items-center gap-2 p-3 my-3 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-white/10 rounded-lg text-sm text-white/60 animate-pulse"
+                className="my-3 flex animate-pulse items-center gap-2 rounded-lg border border-border-default bg-surface-primary p-3 text-sm text-text-secondary"
               >
                 <div className="flex items-center gap-2">
-                  <i className="ri-loader-4-line animate-spin text-blue-400" />
+                  <i className="ri-loader-4-line animate-spin text-text-primary" />
                   <span className="font-medium">Thinking...</span>
                 </div>
                 {query && (
-                  <div className="ml-4 text-sm text-white/50">
+                  <div className="ml-4 text-sm text-text-muted">
                     Searching for: "{query}"
                   </div>
                 )}
@@ -287,7 +287,7 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
 
               return (
                 <div key={index} className="my-4 animate-fadeInUp">
-                  <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-white/40 uppercase tracking-widest">
+                  <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-text-muted">
                     <i className="ri-global-line" />
                     Sources Found ({results.length})
                   </div>
@@ -295,31 +295,31 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
                     {results.map((src, i) => (
                       <div
                         key={i}
-                        className="p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/10 transition-all duration-200 cursor-pointer"
+                        className="cursor-pointer rounded-lg border border-border-default bg-surface-primary p-3 transition-colors duration-150 hover:border-border-strong hover:bg-surface-secondary"
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0">
-                            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-[9px] font-medium text-blue-400">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-strong bg-surface-secondary text-[9px] font-medium text-text-primary">
                               {i + 1}
                             </div>
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex justify-between items-start">
-                              <h3 className="text-sm font-medium text-white line-clamp-2">
+                              <h3 className="line-clamp-2 text-sm font-medium text-text-primary">
                                 {src.title || 'Untitled'}
                               </h3>
-                              <span className="text-xs text-blue-400">
+                              <span className="text-xs text-text-secondary">
                                 Source {i + 1}
                               </span>
                             </div>
-                            <p className="text-xs text-white/60 line-clamp-2">
+                            <p className="line-clamp-2 text-xs text-text-secondary">
                               {src.content?.substring(0, 100) || 'No preview available'}
                             </p>
                             <a
                               href={src.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-blue-300 hover:text-blue-200"
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-text-primary hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
                             >
                               <i className="ri-external-link-line" />
                               <span className="truncate max-w-[200px]">
@@ -339,18 +339,18 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
             return (
               <div
                 key={index}
-                className="p-3 my-3 rounded-lg bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-white/10"
+                className="my-3 rounded-lg border border-border-default bg-surface-primary p-3"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <i className="ri-check-line text-green-400" />
-                  <span className="text-sm font-medium text-green-400">
+                  <span className="text-sm font-medium text-text-primary">
                     {part.toolName} completed successfully
                   </span>
                 </div>
                 {part.args && (
                   <div className="ml-4">
-                    <div className="text-xs text-white/60 mb-1">Input:</div>
-                    <pre className="text-xs text-white/80 bg-white/5 p-2 rounded overflow-auto max-h-24">
+                    <div className="mb-1 text-xs text-text-muted">Input:</div>
+                    <pre className="max-h-24 overflow-auto rounded border border-border-default bg-code-bg p-2 text-xs text-text-secondary">
                       {typeof part.args === 'string' ? part.args.length > 200
                         ? part.args.substring(0, 200) + '...'
                         : part.args
@@ -360,8 +360,8 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
                 )}
                 {part.output && (
                   <div className="mt-3">
-                    <div className="text-xs text-white/60 mb-1">Output:</div>
-                    <pre className="text-xs text-white-80 bg-white/5 p-2 rounded overflow-auto max-h-24">
+                    <div className="mb-1 text-xs text-text-muted">Output:</div>
+                    <pre className="max-h-24 overflow-auto rounded border border-border-default bg-code-bg p-2 text-xs text-text-secondary">
                       {typeof part.output === 'string' ? part.output.length > 200
                         ? part.output.substring(0, 200) + '...'
                         : part.output
