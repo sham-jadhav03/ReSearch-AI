@@ -114,7 +114,7 @@ const DashBoard = () => {
   const isEmpty = currentMessages.length === 0 && !isStreaming && !isLoading;
 
   return (
-    <main className="flex h-screen w-full overflow-hidden bg-app text-white">
+    <main className="flex h-screen w-full overflow-hidden bg-app text-text-primary">
       {/* Sidebar*/}
       <Sidebar
         deleteChat={deleteChat}
@@ -127,13 +127,13 @@ const DashBoard = () => {
       />
 
       {/* Main Chat Area */}
-      <section className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+      <section className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-app">
         {/* Header */}
         <div className="flex items-center gap-2.5 px-6 py-4 border-b border-border-default bg-surface-primary shrink-0">
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
             aria-label="Open sidebar"
-            className="md:hidden p-1.5 -ml-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="md:hidden -ml-2 cursor-pointer rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
           >
             <i className="ri-menu-line text-lg" />
           </button>
@@ -158,7 +158,7 @@ const DashBoard = () => {
         {/* Messages */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
+          className="flex-1 overflow-y-auto bg-app [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong"
         >
           <div className="max-w-3xl mx-auto px-4 py-7 flex flex-col gap-1">
             {/* Empty state */}

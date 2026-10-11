@@ -581,3 +581,17 @@ npm run build      # must be green — as of 2026-10-06: ✓ built (~1.5s)
 npm run lint       # as of 2026-10-06: 0 problems
 npm run dev        # smoke: landing → register → login → chat → stream → sources footer after reload
 ```
+
+### Dark Theme Migration Status (2026-10-12)
+
+The code-block and citation styling is present in the current source:
+
+- `CodeBlock.jsx` uses the code-background token, semantic borders/text, a dark header surface, and tokenized hover/focus colors. The oneDark syntax theme and clipboard behavior are unchanged.
+- `CitationChip.jsx` and `CitationToolTips.jsx` use semantic surface, border, and text colors. External source navigation, hover/focus tooltip display, and favicon behavior are unchanged.
+- No component code changes were needed for this status reconciliation. Build/lint verification and browser visual review are tracked in `design_context.md`.
+- The latest implementation batch tokenizes progress, loading, thinking, and error-state surfaces in `StreamingProgress.jsx`, `LoadingIndicator.jsx`, `ThinkingIndicator.jsx`, and `ErrorBanner.jsx`; route loading backgrounds in `AppRoutes.jsx` and `Protected.jsx` now use `bg-app`. Stream timing, loading variants, error categorization/actions, and state-specific color cues were preserved. Build and lint passed; the build reports the existing dashboard chunk-size advisory. Browser visual verification remains pending.
+- Follow-up from the attached chat screenshot: document/body/root and dashboard content/scroll surfaces explicitly use the app background to prevent a white canvas; the empty-state copy now uses readable semantic text/surface tokens. The sidebar uses the dedicated sidebar token, and source chips/footer, composer controls, profile page, and error-boundary fallback were brought into the same minimal dark palette.
+- Corrected the composer send button's `className` from a literal string containing interpolation syntax to a template string, so enabled/disabled styles apply. The enabled action uses the primary token pair and disabled action uses the elevated surface; send behavior is unchanged.
+- Composer UX follow-up: gave the input a restrained surface, clear focus ring, taller writing area, and larger round primary send action. Removed the attachment button because it had no handler, added an accessible prompt label and send labels, and replaced the inaccurate shortcut hint with the actual Enter/Shift+Enter behavior. Ctrl/Cmd+Enter remains supported and now bypasses the textarea's Enter handler to avoid duplicate submits. Suggestions and character-count behavior are unchanged.
+- A source audit found no current dialog/modal components. Suggestion and citation popovers are tokenized. Responsive layouts and focus/hover styling are present in audited controls, but still need browser-based visual and interaction verification.
+- `design_context.md` is the authoritative dark-theme checklist and handoff. The latest build/lint and visual-validation status are recorded there.

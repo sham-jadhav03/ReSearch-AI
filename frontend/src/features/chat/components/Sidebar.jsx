@@ -39,7 +39,7 @@ const Sidebar = (props) => {
           <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
             <LogoIcon size={16} />
           </div>
-          <span className="text-[15px] font-medium tracking-[-0.2px] text-white">
+          <span className="text-[15px] font-medium tracking-[-0.2px] text-text-primary">
             ResearchAI
           </span>
         </div>
@@ -48,7 +48,7 @@ const Sidebar = (props) => {
           <button
             onClick={onClose}
             aria-label="Close sidebar"
-            className="md:hidden p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="md:hidden cursor-pointer rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
           >
             <i className="ri-close-line text-lg" />
           </button>
@@ -58,7 +58,7 @@ const Sidebar = (props) => {
       <div className="px-3 pt-3">
         <button
           onClick={handleNewChat}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-dashed border-border-default text-text-secondary text-[13px] hover:border-green-300 hover:text-green-400 hover:bg-blue-500/8 transition-all duration-200 cursor-pointer"
+          className="w-full cursor-pointer flex items-center gap-2.5 rounded-xl border border-dashed border-border-default px-3 py-2.5 text-[13px] text-text-secondary transition-colors hover:border-border-strong hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           <i className="ri-add-line text-base" />
           New chat
@@ -68,7 +68,7 @@ const Sidebar = (props) => {
       {/* Chat list */}
       <div className="flex-1 overflow-y-auto px-3 pt-3 pb-4 space-y-0.5">
         {Object.values(chats).length > 0 && (
-          <p className="text-[10px] font-medium tracking-[0.8px] uppercase text-white/20 px-2 pb-2 pt-1">
+          <p className="px-2 pb-2 pt-1 text-[10px] font-medium uppercase tracking-[0.8px] text-text-muted">
             Recent
           </p>
         )}
@@ -76,17 +76,17 @@ const Sidebar = (props) => {
           <button
             key={index}
             onClick={() => handleSelectChat(chat.id)}
-            className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150 border cursor-pointer text-left
+            className={`group flex w-full cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 text-left text-[13px] transition-colors
               ${
                 currentChatId === chat.id
-                  ? "bg-blue-500/12 border-blue-500/2 text-white"
-                  : "border-transparent text-text-secondary hover:bg-white/5 hover:border-white/[0.07] hover:text-white/90"
+                  ? "border-border-default bg-surface-secondary text-text-primary"
+                  : "border-transparent text-text-secondary hover:border-border-default hover:bg-surface-secondary hover:text-text-primary"
               }`}
           >
             <span className="truncate flex-1 text-left">{chat.title}</span>
             <span
               onClick={(e) => deleteChat(e, chat.id)}
-              className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 transition-all duration-150 shrink-0 ml-1"
+              className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-colors hover:bg-red-500/20 group-hover:opacity-100"
             >
               <i className="ri-delete-bin-3-line text-xs text-red-400" />
             </span>
@@ -101,14 +101,14 @@ const Sidebar = (props) => {
             if (onClose) onClose();
             navigate("/profile");
           }}
-          className="cursor-pointer flex items-center gap-2.5 px-4 py-5 w-full hover:bg-white/5 hover:text-white text-text-secondary transition-all duration-150"
+          className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-5 text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-text-primary"
         >
           <i className="ri-user-3-line text-base"></i>
-          <span className="font-semibold text-white">Profile</span>
+          <span className="font-semibold text-text-primary">Profile</span>
         </button>
         <button
           onClick={onLogout}
-          className="cursor-pointer flex items-center justify-center px-4 py-5 hover:bg-red-500/10 text-red-400 border-l border-border-default transition-all duration-150 h-full self-stretch"
+          className="flex h-full cursor-pointer items-center justify-center self-stretch border-l border-border-default px-4 py-5 text-red-400 transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-400"
           title="Log Out"
         >
           <i className="ri-logout-box-r-line text-base"></i>
@@ -120,7 +120,7 @@ const Sidebar = (props) => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-62.5 min-w-62.5 h-full bg-surface-primary border-r border-border-default">
+      <aside className="hidden h-full w-62.5 min-w-62.5 flex-col border-r border-border-default bg-sidebar md:flex">
         {sidebarContent}
       </aside>
 
@@ -133,7 +133,7 @@ const Sidebar = (props) => {
             onClick={onClose}
           />
           {/* Drawer content */}
-          <aside className="relative flex flex-col w-72 max-w-[85vw] h-full bg-surface-primary border-r border-border-default z-10 shadow-2xl">
+          <aside className="relative z-10 flex h-full w-72 max-w-[85vw] flex-col border-r border-border-default bg-sidebar shadow-2xl">
             {sidebarContent}
           </aside>
         </div>

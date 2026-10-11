@@ -36,6 +36,22 @@
    GLOBAL STYLES
    ============================================ */
 
+html,
+body,
+#root {
+  min-height: 100%;
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
+}
+
+body {
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
 .messages::-webkit-scrollbar {
     display: none;
 }

@@ -18,22 +18,18 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-app flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-surface-primary border border-border-default rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-        {/* Glow decoration */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl" />
-
-        <div className="flex flex-col items-center text-center relative z-10">
+    <div className="flex min-h-screen w-full items-center justify-center bg-app p-4">
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border-default bg-surface-primary p-8 shadow-2xl">
+        <div className="relative z-10 flex flex-col items-center text-center">
           {/* Avatar */}
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg mb-6 ring-4 ring-white/[0.04]">
-            <span className="text-3xl font-semibold text-white tracking-wider">
+          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-border-strong bg-surface-secondary">
+            <span className="text-3xl font-semibold tracking-wider text-text-primary">
               {getInitial(user?.username)}
             </span>
           </div>
 
           {/* User Details */}
-          <h2 className="text-2xl font-bold text-white mb-1">
+          <h2 className="mb-1 text-2xl font-bold text-text-primary">
             {user?.username || 'User Profile'}
           </h2>
           <p className="text-sm text-text-secondary mb-8 font-medium">
@@ -43,7 +39,7 @@ const Profile = () => {
           <div className="w-full space-y-3.5">
             <button
               onClick={() => navigate('/')}
-              className="w-full py-3 px-4 rounded-xl border border-white/[0.07] bg-white/5 text-white font-medium hover:bg-white/10 hover:border-white/15 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-default bg-surface-secondary px-4 py-3 font-medium text-text-primary transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
             >
               <i className="ri-arrow-left-line text-lg" />
               Back to Chat
@@ -51,7 +47,7 @@ const Profile = () => {
 
             <button
               onClick={onLogout}
-              className="w-full py-3 px-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 font-medium hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 font-medium text-red-400 transition-colors hover:bg-red-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
             >
               <i className="ri-logout-box-r-line text-lg" />
               Log Out

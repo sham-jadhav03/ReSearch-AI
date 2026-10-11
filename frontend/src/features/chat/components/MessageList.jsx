@@ -12,7 +12,7 @@ const MessageItem = React.memo(({ message }) => {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2`}>
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-[#10a37f] border border-white/10 flex items-center justify-center shrink-0 mr-4 mt-0.5 self-start shadow-sm">
+        <div className="mr-4 mt-0.5 flex h-8 w-8 shrink-0 self-start items-center justify-center rounded-full border border-border-default bg-[#10a37f] shadow-sm">
           <LogoIcon size={16} color="white" />
         </div>
       )}
@@ -43,8 +43,8 @@ const MessageItem = React.memo(({ message }) => {
 
         {/* Citation summary section (GPT-like sources footer) */}
         {!isUser && message.hasCitations && message.citations?.length > 0 && (
-          <div className="mt-8 pt-4 border-t border-white/5">
-            <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-white/40 uppercase tracking-widest">
+          <div className="mt-8 border-t border-border-default pt-4">
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-text-muted">
               <i className="ri-quote-line" />
               Sources
             </div>
@@ -56,12 +56,12 @@ const MessageItem = React.memo(({ message }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ animationDelay: `${i * 70}ms` }}
-                  className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer animate-fadeInUp"
+                  className="group flex cursor-pointer items-center gap-2 rounded-lg border border-border-default bg-surface-primary px-3 py-1.5 transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary animate-fadeInUp"
                 >
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white/10 text-[9px] font-bold text-white/50 group-hover:text-white transition-colors">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated text-[9px] font-bold text-text-secondary transition-colors group-hover:text-text-primary">
                     {citation.index}
                   </span>
-                  <span className="text-[12px] text-white/50 group-hover:text-white/80 transition-colors truncate max-w-[150px]">
+                  <span className="max-w-[150px] truncate text-[12px] text-text-secondary transition-colors group-hover:text-text-primary">
                     {citation.title}
                   </span>
                 </a>

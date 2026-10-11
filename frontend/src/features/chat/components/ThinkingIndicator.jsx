@@ -15,7 +15,7 @@ const ThinkingIndicator = ({ text = "AI is thinking", className = "" }) => {
 
       {/* Text and animated dots */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-white/80 font-medium">{text}</span>
+        <span className="text-sm font-medium text-text-primary">{text}</span>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-[#10a37f]/70 animate-bounce" style={{ animationDelay: '0ms' }} />
           <div className="w-2 h-2 rounded-full bg-[#10a37f]/70 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -24,9 +24,9 @@ const ThinkingIndicator = ({ text = "AI is thinking", className = "" }) => {
       </div>
 
       {/* Status tooltip text */}
-      <div className="hidden lg:flex items-center gap-2 pl-4 ml-2 border-l border-white/10">
+      <div className="ml-2 hidden items-center gap-2 border-l border-border-default pl-4 lg:flex">
         <div className="w-1 h-1 rounded-full bg-[#10a37f] animate-pulse" />
-        <span className="text-xs text-white/40">Searching and reasoning</span>
+        <span className="text-xs text-text-muted">Searching and reasoning</span>
       </div>
     </div>
   );

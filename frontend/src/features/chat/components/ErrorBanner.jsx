@@ -87,9 +87,9 @@ const ErrorBanner = ({ message, onDismiss, errorCode, onRetry, onLogin }) => {
   const config = getErrorConfig();
 
   const variantStyles = {
-    error: 'bg-red-500/10 border-red-500/20 text-red-400',
-    warning: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-    info: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+    error: 'bg-red-500/10 border-red-500/30 text-red-400',
+    warning: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+    info: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
   };
 
   const handleRetry = () => {
@@ -103,15 +103,15 @@ const ErrorBanner = ({ message, onDismiss, errorCode, onRetry, onLogin }) => {
   };
 
   return (
-    <div className={`mx-4 my-3 flex items-start gap-3 px-4 py-3 rounded-xl border ${variantStyles[config.variant]} text-sm animate-fadeInUp shrink-0`}>
+    <div className={`mx-4 my-3 flex shrink-0 items-start gap-3 rounded-xl border px-4 py-3 text-sm animate-fadeInUp ${variantStyles[config.variant]}`}>
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <i className={`${config.icon} text-base shrink-0 ${config.variant === 'error' ? 'text-red-400' : config.variant === 'warning' ? 'text-amber-400' : 'text-blue-400'}`} />
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-white mb-1">{config.title}</div>
-          <div className="text-white/90 truncate leading-snug">{config.message}</div>
+          <div className="mb-1 font-medium text-text-primary">{config.title}</div>
+          <div className="truncate leading-snug text-text-secondary">{config.message}</div>
           {isExpanded && (
-            <div className="mt-2 text-xs text-white/50 border-t border-white/10 pt-2">
-              <pre className="whitespace-pre-wrap text-white/40">{JSON.stringify({ errorCode, message }, null, 2)}</pre>
+            <div className="mt-2 border-t border-border-default pt-2 text-xs text-text-muted">
+              <pre className="whitespace-pre-wrap text-text-muted">{JSON.stringify({ errorCode, message }, null, 2)}</pre>
             </div>
           )}
         </div>
@@ -122,9 +122,7 @@ const ErrorBanner = ({ message, onDismiss, errorCode, onRetry, onLogin }) => {
         {config.showRetry && onRetry && (
           <button
             onClick={handleRetry}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer
-              bg-white/10 hover:bg-white/20 text-white/90 border border-white/10 hover:border-white/20
-              disabled:opacity-50 disabled:cursor-not-allowed"
+            className="cursor-pointer rounded-lg border border-border-default bg-surface-secondary px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             <i className="ri-refresh-line mr-1" />
             Retry
@@ -134,8 +132,7 @@ const ErrorBanner = ({ message, onDismiss, errorCode, onRetry, onLogin }) => {
         {config.showLogin && (
           <button
             onClick={handleLogin}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer
-              bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 hover:border-blue-500/50"
+            className="cursor-pointer rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-medium text-blue-300 transition-colors hover:border-blue-500/50 hover:bg-blue-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <i className="ri-login-box-line mr-1" />
             Log In
@@ -146,7 +143,7 @@ const ErrorBanner = ({ message, onDismiss, errorCode, onRetry, onLogin }) => {
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             aria-label={isExpanded ? "Collapse error details" : "Expand error details"}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/60 hover:text-white shrink-0 cursor-pointer"
+            className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
           >
             <i className={isExpanded ? "ri-arrow-up-line text-base" : "ri-arrow-down-line text-base"} />
           </button>
@@ -155,7 +152,7 @@ const ErrorBanner = ({ message, onDismiss, errorCode, onRetry, onLogin }) => {
         <button
           onClick={onDismiss}
           aria-label="Dismiss error"
-          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white shrink-0 cursor-pointer"
+          className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-elevated hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           <i className="ri-close-line text-base" />
         </button>

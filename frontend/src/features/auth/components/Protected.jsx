@@ -13,7 +13,7 @@ const Protected = ({ children }) => {
         variant="spinner"
         size="medium"
         text=""
-        className="h-screen bg-[#0f0f10]"
+        className="h-screen bg-app"
       />
     );
   }

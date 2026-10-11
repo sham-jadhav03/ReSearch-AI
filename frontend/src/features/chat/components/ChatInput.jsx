@@ -19,7 +19,7 @@ const CharacterCount = ({ current, max, className = "", showPercentage = true })
           {showPercentage && `${Math.round(percentage)}%`} (limit {max})
         </span>
       </div>
-      <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
+      <div className="h-1 w-full overflow-hidden rounded-full bg-surface-elevated">
         <div
           className={`h-full transition-all duration-300 ${isOverLimit ? "bg-red-500" : percentage > 80 ? "bg-amber-500" : "bg-blue-500"}`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -33,7 +33,7 @@ const SuggestionButton = ({ text, onClick, icon }) => {
   return (
     <button
       onClick={() => onClick(text)}
-      className="group px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-white/50 hover:border-blue-500/50 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+      className="group flex cursor-pointer items-center gap-1.5 rounded-full border border-border-default bg-surface-primary px-3 py-2 text-xs text-text-secondary transition-colors hover:border-border-strong hover:bg-surface-elevated hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
       title={text}
     >
       {icon && <i className={`${icon} text-xs`} />}
@@ -187,38 +187,34 @@ const ChatInput = (props) => {
                 )}
 
                 {/* Input container */}
-                <div className={`flex items-end gap-2.5 bg-surface-secondary border rounded-2xl px-4 py-3 transition-all duration-200
-                    ${isFocused ? 'border-blue-500/50 shadow-[0_0_0_3px_rgba(79,142,247,0.1)]' : 'border-border-default'}
-                    ${isOverLimit ? 'border-red-500/30 bg-red-500/5' : ''}
-                    ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}
+                <div className={`flex items-end gap-3 rounded-2xl border bg-surface-primary px-4 py-3 shadow-lg shadow-black/10 transition-all duration-200
+                    ${isOverLimit ? 'border-red-500/50 bg-red-500/5' : isFocused ? 'border-border-strong shadow-[0_0_0_3px_rgba(245,245,245,0.06)]' : 'border-border-default hover:border-border-strong'}
+                    ${isLoading ? 'cursor-not-allowed opacity-75' : ''}
                 `}>
-
-                    {/* Attach button */}
-                    <button
-                        type="button"
-                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-border-default text-white/30 hover:text-white/60 hover:border-white/15 hover:bg-white/5 transition-all duration-150 shrink-0 self-end mb-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading}
-                    >
-                        <i className="ri-attachment-2 text-sm" />
-                    </button>
-
                     {/* Textarea */}
                     <div className="relative flex-1">
                         <textarea
+                            aria-label="Write your research prompt"
                             ref={textAreaRef}
                             value={chatInput}
                             onChange={handleInputChange}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
                             onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey  && !isLoading) {
+                                if (
+                                    e.key === "Enter" &&
+                                    !e.shiftKey &&
+                                    !e.ctrlKey &&
+                                    !e.metaKey &&
+                                    !isLoading
+                                ) {
                                     e.preventDefault();
                                     handleSubmitWithCleanup(e);
                                 }
                             }}
                             placeholder="Ask anything..."
                             rows={1}
-                            className="flex-1 bg-transparent text-[14px] text-text-primary outline-none resize-none leading-relaxed placeholder-white/25 max-h-30 self-center py-0.5 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="min-h-10 max-h-30 w-full flex-1 resize-none self-center bg-transparent py-2 text-[14px] leading-relaxed text-text-primary outline-none placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-50"
                             disabled={isLoading}
                             maxLength={maxChars}
                             style={{ height: textareaHeight, overflow: 'hidden' }}
@@ -233,39 +229,49 @@ const ChatInput = (props) => {
                         type="button"
                         onClick={handleSubmitWithCleanup}
                         disabled={!canSend}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 self-end transition-all duration-200 cursor-pointer
-                            ${canSend
-                                ? 'bg-blue-500 hover:bg-blue-400 hover:scale-105 shadow-[0_2px_8px_rgba(59,130,246,0.3)]'
-                                : 'bg-white/6 cursor-not-allowed opacity-50'
-                            }
-                        "
+                        aria-label={canSend ? "Send message" : "Enter a prompt to send"}
+                        title={canSend ? "Send message" : "Enter a prompt to send"}
+                        className={`flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center self-end rounded-full transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary ${
+                            canSend
+                                ? "bg-primary text-primary-fg hover:scale-105 hover:bg-text-secondary"
+                                : "cursor-not-allowed bg-surface-elevated text-text-muted"
+                        }`}
                     >
-                        <i className="ri-arrow-up-line text-sm text-white" />
+                        <i className="ri-arrow-up-line text-base" />
                     </button>
                 </div>
 
                 {/* Status bar */}
-                <div className="flex items-center justify-between mt-2 px-1">
+                <div className="mt-2 flex min-h-5 items-center justify-between gap-3 px-1">
                     {/* Keyboard shortcuts hint */}
-                    <div className="text-[10px] text-white/20 hidden sm:block">
-                        <kbd className="px-1 py-0.5 bg-white/10 rounded text-text-muted">Ctrl</kbd>
-                        <kbd className="px-1 py-0.5 bg-white/10 rounded text-text-muted ml-1">Enter</kbd>
-                        <span className="ml-1">to send</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                        <kbd className="rounded border border-border-default bg-surface-primary px-1.5 py-0.5 font-mono text-text-secondary">Enter</kbd>
+                        <span>to send</span>
+                        <span className="mx-0.5 text-border-strong">·</span>
+                        <span className="hidden sm:inline">
+                            <kbd className="rounded border border-border-default bg-surface-primary px-1.5 py-0.5 font-mono text-text-secondary">Shift + Enter</kbd>
+                            <span className="ml-1">for a new line</span>
+                        </span>
                     </div>
 
                     {/* Character count */}
-                    {showCharacterCount && (
-                        <div className="text-[10px] text-white/30 ml-auto hidden md:block">
-                            {maxChars} characters limit
-                        </div>
-                    )}
+                    <div className="ml-auto hidden items-center gap-1.5 text-[10px] text-text-muted md:flex">
+                        <i className="ri-global-line" aria-hidden="true" />
+                        <span>Web research</span>
+                        {showCharacterCount && (
+                            <>
+                                <span className="text-border-strong">·</span>
+                                <span>{maxChars.toLocaleString()} character limit</span>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* Quick suggestions (powered by AI) */}
                 {showSuggestions && suggestions.length > 0 && (
                     <div
                         ref={suggestionRef}
-                        className="absolute bottom-full left-4 right-4 mb-2 p-3 bg-surface-secondary border border-white/10 rounded-xl shadow-lg z-10
+                        className="absolute bottom-full left-4 right-4 z-10 mb-2 rounded-xl border border-border-default bg-surface-secondary p-3 shadow-lg
                             animate-fadeInUp
                         "
                     >
@@ -283,9 +289,6 @@ const ChatInput = (props) => {
                     </div>
                 )}
 
-                <p className="text-center text-[11px] text-white/20 mt-3 tracking-[0.2px]">
-                    ResearchAI searches the web in real-time · Sources cited inline
-                </p>
             </div>
         </>
     );
