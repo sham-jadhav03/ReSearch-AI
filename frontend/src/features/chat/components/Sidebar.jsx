@@ -9,6 +9,8 @@ const Sidebar = (props) => {
     chats,
     openChat,
     currentChatId,
+    isLoadingChats,
+    deletingChatId,
     isMobileOpen,
     onClose,
   } = props;
@@ -67,30 +69,55 @@ const Sidebar = (props) => {
 
       {/* Chat list */}
       <div className="flex-1 overflow-y-auto px-3 pt-3 pb-4 space-y-0.5">
-        {Object.values(chats).length > 0 && (
+        {(Object.values(chats).length > 0 || isLoadingChats) && (
           <p className="px-2 pb-2 pt-1 text-[10px] font-medium uppercase tracking-[0.8px] text-text-muted">
             Recent
           </p>
         )}
+        {isLoadingChats && Object.values(chats ?? {}).length === 0 && (
+          <div role="status" className="space-y-2 px-2 py-2">
+            <span className="sr-only">Loading chats...</span>
+            {[0, 1, 2].map((item) => (
+              <div
+                key={item}
+                className="h-9 animate-pulse rounded-xl bg-surface-secondary"
+              />
+            ))}
+          </div>
+        )}
         {Object.values(chats ?? {}).map((chat, index) => (
-          <button
+          <div
             key={index}
-            onClick={() => handleSelectChat(chat.id)}
-            className={`group flex w-full cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 text-left text-[13px] transition-colors
+            className={`group flex w-full items-center justify-between rounded-xl border px-1.5 py-1.5 text-left text-[13px] transition-colors
               ${
                 currentChatId === chat.id
                   ? "border-border-default bg-surface-secondary text-text-primary"
                   : "border-transparent text-text-secondary hover:border-border-default hover:bg-surface-secondary hover:text-text-primary"
               }`}
           >
-            <span className="truncate flex-1 text-left">{chat.title}</span>
-            <span
-              onClick={(e) => deleteChat(e, chat.id)}
-              className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-colors hover:bg-red-500/20 group-hover:opacity-100"
+            <button
+              type="button"
+              onClick={() => handleSelectChat(chat.id)}
+              className="min-w-0 flex-1 cursor-pointer truncate rounded-lg px-1.5 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
             >
-              <i className="ri-delete-bin-3-line text-xs text-red-400" />
-            </span>
-          </button>
+              {chat.title}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => deleteChat(e, chat.id)}
+              disabled={Boolean(deletingChatId)}
+              aria-label={`Delete ${chat.title}`}
+              className="ml-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded opacity-0 transition-colors hover:bg-red-500/20 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:cursor-wait disabled:opacity-100"
+            >
+              <i
+                className={`text-xs text-red-400 ${
+                  deletingChatId === chat.id
+                    ? "ri-loader-4-line animate-spin"
+                    : "ri-delete-bin-3-line"
+                }`}
+              />
+            </button>
+          </div>
         ))}
       </div>
 

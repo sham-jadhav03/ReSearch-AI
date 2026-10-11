@@ -58,7 +58,8 @@ src/
 │       │   └── ui/
 │       │       ├── CitationChip.jsx      # [1][2] inline chips with hover tooltip
 │       │       ├── CitationToolTips.jsx  # Tooltip card (favicon + title + url)
-│       │       └── CodeBlock.jsx         # react-syntax-highlighter + copy button
+│       │       ├── CodeBlock.jsx         # Single code/copy toolbar; lazy syntax renderer
+│       │       └── CodeSyntaxBlock.jsx   # PrismLight + explicitly registered common grammars
 │       ├── hooks/useChat.js          # Core: SSE parsing, streaming parts, chat CRUD glue
 │       ├── pages/
 │       │   ├── DashBoard.jsx         # Main chat screen (sidebar + messages + input)
@@ -67,6 +68,8 @@ src/
 │       ├── services/chat.api.js      # fetch() for SSE POST /message; axios for the rest
 │       ├── shared/
 │       │   ├── global.js             # FEATURES, STATS, Pipeline, navLink, SUGGESTIONS constants
+│       │   ├── renderMarkdownPre.jsx # Shared fenced-code wrapper for both Markdown renderers
+│       │   ├── safeExternalUrl.js    # HTTP(S)-only citation/search source links
 │       │   └── LogoIcon.jsx          # Brand logo SVG
 │       ├── state/chat.slices.js      # chat slice (see State section)
 │       └── styles/
@@ -101,13 +104,17 @@ initialState = { user: null, loading: true, error: null }
 
 ### `chat` slice (`features/chat/state/chat.slices.js`)
 ```js
-initialState = { chats: {}, currentChatId: null, isLoading: false, error: null }
+initialState = {
+  chats: {}, currentChatId: null, isLoadingChats: false,
+  loadingChatId: null, deletingChatId: null, error: null
+}
 ```
-- `chats`: object keyed by `chatId`, each `{ id, title, messages: [], lastUpdated }`
+- `chats`: object keyed by `chatId`, each `{ id, title, messages: [], messagesLoaded, lastUpdated }`
 - `createNewChat({chatId, title})`, `addNewMessage({chatId, content, role, citations, hasCitations, parts})`,
-  `addMessages({chatId, messages})` (bulk load, pushes onto existing), `deleteChat({chatId})`
+  `addMessages({chatId, messages})` (bulk load and marks loaded, including empty chats), `deleteChat({chatId})`
   (removes key; clears currentChatId if it was open), `setChats(map)` (full replace from GET /api/chat),
-  `setCurrentChatId`, `setLoading`, `setError(null to clear)`
+  `setCurrentChatId`, `setChatsLoading`, `setLoadingChatId`, `setDeletingChatId`, `setError(null to clear)`
+- Send/streaming status is local to the dashboard's `useChat` instance (`isSending`, `isStreaming`, `streamingChatId`) so list/delete operations cannot masquerade as AI thinking.
 - Message shape in store: `{ content, role, citations, hasCitations, parts }` — note: NO `_id` stored.
 
 ---
@@ -145,7 +152,7 @@ Errors read `error.response?.data?.message` (expects flat string — backend now
 | `error` | code, message | throws Error with `.code` (displayed via setError) |
 | `: ping` comments | — | ignored (not `data:` lines) |
 
-`useChat.js` state: `streamingParts` (state) + `streamingPartsRef` (ref mirror), `isStreaming`, `handleSendMessage/handleGetChats/handleOpenChat/handleDeleteChat`. **No auto-retry loop** (removed in backend Fix 4.5) — a dropped stream shows an error and preserves partial text.
+`useChat.js` state: `streamingParts` (state) + `streamingPartsRef` (ref mirror), `isSending`, `isStreaming`, `streamingChatId`, and `handleSendMessage/handleGetChats/handleOpenChat/handleDeleteChat`. It handles fragmented chunks, CRLF event separators, multi-line `data:` fields, decoder flush, and a final event without a trailing separator. **No auto-retry loop** — manual retry remains available only when the stream fails before the `start` event, avoiding duplicate user messages.
 
 ---
 
@@ -595,3 +602,12 @@ The code-block and citation styling is present in the current source:
 - Composer UX follow-up: gave the input a restrained surface, clear focus ring, taller writing area, and larger round primary send action. Removed the attachment button because it had no handler, added an accessible prompt label and send labels, and replaced the inaccurate shortcut hint with the actual Enter/Shift+Enter behavior. Ctrl/Cmd+Enter remains supported and now bypasses the textarea's Enter handler to avoid duplicate submits. Suggestions and character-count behavior are unchanged.
 - A source audit found no current dialog/modal components. Suggestion and citation popovers are tokenized. Responsive layouts and focus/hover styling are present in audited controls, but still need browser-based visual and interaction verification.
 - `design_context.md` is the authoritative dark-theme checklist and handoff. The latest build/lint and visual-validation status are recorded there.
+
+### Reliability and Performance Hardening (Current)
+
+- Chat-list, conversation, send, and delete states are separate. Opening a conversation gives immediate selection/loading feedback, deduplicates concurrent fetches, and caches completed empty histories. Streaming output is shown only in its owning conversation.
+- SSE parsing supports fragmented chunks, CRLF, multi-line `data:` fields, a flushed decoder, and final buffered events. Event protocol and the safe pre-start-only retry behavior remain unchanged.
+- Citation and search-result destinations use `shared/safeExternalUrl.js`, which accepts HTTP(S) only. Invalid source values are displayed without an active link.
+- Raw HTML interpretation and the now-unused `rehype-raw`/`rehype-highlight` dependencies were removed. Code blocks own the only language/copy toolbar and lazy-load `CodeSyntaxBlock.jsx`, which registers common Prism grammars and uses plain-text rendering for unknown languages.
+- `npm run build`, `npm run lint`, and `git diff --check` pass. The Dashboard route chunk is 185.94 kB raw / 52.97 kB gzip, versus the previous approximately 1.16 MB / 387 kB. The 81.95 kB / 26.85 kB gzip PrismLight chunk is fetched only when code blocks render.
+- Frontend tests and a release smoke test remain deferred per the user's requested work order. See `design_context.md` for current validation and the next project phase.

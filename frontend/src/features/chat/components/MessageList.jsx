@@ -1,10 +1,10 @@
 import React from "react";
 import ReactMarkDown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import LogoIcon from "../shared/LogoIcon";
 import { MessageRenderer } from "./MessageRenderer";
 import { buildMarkdownComponents } from "./MarkdownComponents";
+import { getSafeExternalUrl } from "../shared/safeExternalUrl";
 
 const MessageItem = React.memo(({ message }) => {
   const isUser = message.role === "user";
@@ -33,7 +33,6 @@ const MessageItem = React.memo(({ message }) => {
           ) : (
             <ReactMarkDown
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
               components={buildMarkdownComponents(message.citations || [])}
             >
               {message.content}
@@ -49,23 +48,43 @@ const MessageItem = React.memo(({ message }) => {
               Sources
             </div>
             <div className="flex flex-wrap gap-2 animate-fadeInUp">
-              {message.citations.map((citation, i) => (
-                <a
-                  key={citation.index}
-                  href={citation.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ animationDelay: `${i * 70}ms` }}
-                  className="group flex cursor-pointer items-center gap-2 rounded-lg border border-border-default bg-surface-primary px-3 py-1.5 transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary animate-fadeInUp"
-                >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated text-[9px] font-bold text-text-secondary transition-colors group-hover:text-text-primary">
-                    {citation.index}
+              {message.citations.map((citation, i) => {
+                const safeUrl = getSafeExternalUrl(citation.url);
+                const content = (
+                  <>
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated text-[9px] font-bold text-text-secondary transition-colors group-hover:text-text-primary">
+                      {citation.index}
+                    </span>
+                    <span className="max-w-[150px] truncate text-[12px] text-text-secondary transition-colors group-hover:text-text-primary">
+                      {citation.title}
+                    </span>
+                  </>
+                );
+                const className =
+                  "group flex items-center gap-2 rounded-lg border border-border-default bg-surface-primary px-3 py-1.5 transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary animate-fadeInUp";
+
+                return safeUrl ? (
+                  <a
+                    key={citation.index}
+                    href={safeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ animationDelay: `${i * 70}ms` }}
+                    className={`${className} cursor-pointer`}
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  <span
+                    key={citation.index}
+                    aria-label={`${citation.title || "Source"} (link unavailable)`}
+                    style={{ animationDelay: `${i * 70}ms` }}
+                    className={`${className} opacity-60`}
+                  >
+                    {content}
                   </span>
-                  <span className="max-w-[150px] truncate text-[12px] text-text-secondary transition-colors group-hover:text-text-primary">
-                    {citation.title}
-                  </span>
-                </a>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

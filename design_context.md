@@ -51,7 +51,7 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 - **Styling**: Utility-first Tailwind CSS v4 (no config file, classes are inline)
 - **State Management**: Redux Toolkit (auth and chat slices)
 - **Streaming**: SSE-based real-time streaming via `useChat.js` with requestAnimationFrame batching
-- **Markdown Processing**: ReactMarkdown with remark-gfm, rehype-raw, rehype-highlight via `MessageRenderer` and `MarkdownComponents`
+- **Markdown Processing**: ReactMarkdown with remark-gfm; raw HTML and the unused highlight plugin were removed during reliability hardening. Code blocks lazy-load a PrismLight renderer with registered languages.
 - **Component Architecture**: Feature-based organization with shared UI components
 
 ### Streaming Behavior (Must Be Preserved)
@@ -64,8 +64,8 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 ### Known Constraints & Regressions
 - Duplicate citation logic exists between `MessageRenderer.jsx` and `MarkdownComponents.jsx` (known issue #7)
 - Escape key clears input only when NOT focused (known issue #11) - verify intent
-- All changes must preserve existing SSE architecture and application behavior
-- No modifications to backend, SSE protocol, or `useChat.js` buffering during this migration
+- Preserve the existing SSE event contract, retry-safety rule, citations, and progressive rendering while hardening client-side parsing.
+- Do not modify the backend or SSE event protocol.
 
 ### Global Styles & Typography
 - Tailwind CSS v4 via `@tailwindcss/vite` (utility-first, no config file)
@@ -164,3 +164,13 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 - **Verification**: `npm --prefix frontend run build`, `npm --prefix frontend run lint`, and `git diff --check` passed. The build retains the existing dashboard chunk-size advisory. Browser visual verification was not performed because browser access was not approved.
 - **Remaining**: Validate the screenshot fix in the running app and do desktop/mobile, keyboard-focus, hover, streaming, and tooltip interaction checks. Recheck after any later UI changes.
 - **Next Recommended Task**: Run the frontend build/lint after the composer refinement, then perform browser-based visual and interaction verification of the dark chat experience.
+
+## I. Frontend Reliability and Performance Hardening (Current)
+
+- **Scope completed in source**: Split chat loading feedback into chat-list, conversation, send, and delete operations. Conversation requests are deduplicated, empty conversations are cached as loaded, and a stream is only rendered in the conversation that owns it.
+- **SSE parsing**: The reader now handles fragmented chunks, CRLF event separators, multiple `data:` lines, decoder flush, and a final event without a trailing separator. Existing event names, stream batching, completion handling, and pre-start-only retry safety are retained.
+- **Source URL handling**: Citation and search-result links are restricted to HTTP(S). Invalid source URLs render as non-links instead of throwing during render or exposing unsafe protocols.
+- **Markdown and code blocks**: Removed `rehype-raw` so Markdown text cannot enable embedded raw HTML. Removed redundant `rehype-highlight`, leaving one copy/language toolbar in `CodeBlock.jsx`. PrismLight with common grammars is loaded lazily in `CodeSyntaxBlock.jsx`; unregistered languages render as plain text.
+- **Tests**: Frontend tests and a release smoke test remain explicitly deferred until after reliability items 2–5 and the subsequent product/interaction polish.
+- **Verification**: `npm --prefix frontend run build`, `npm --prefix frontend run lint`, and `git diff --check` passed. The Dashboard route chunk is now 185.94 kB raw / 52.97 kB gzip (previously approximately 1.16 MB / 387 kB); the PrismLight renderer is a deferred 81.95 kB / 26.85 kB gzip chunk. This is roughly an 84% raw and 86% gzip reduction in the Dashboard chunk. No browser verification was performed.
+- **Next**: Finish validation and record measured bundle output. Then proceed to the previously deferred product/interaction polish audit; only afterward revisit frontend tests and the release smoke test.

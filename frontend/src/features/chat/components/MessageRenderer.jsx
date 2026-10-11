@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import ReactMarkDown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
-import rehypeHighlight from "rehype-highlight";
 import { markdownComponents } from "./MarkdownComponents";
 import CodeBlock from "./ui/CodeBlock";
 import CitationChip from "./ui/CitationChip";
+import { getSafeExternalUrl } from "../shared/safeExternalUrl";
+import { renderMarkdownPre } from "../shared/renderMarkdownPre";
 
 const fixIncompleteMarkdown = (text) => {
   if (!text) return text;
@@ -27,46 +27,6 @@ const getToolQuery = (args) => {
   }
 };
 
-// Enhanced code block with copy functionality
-const EnhancedCodeBlock = ({ children, className, language }) => {
-  const [isCopied, setIsCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(children);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy code:', err);
-    }
-  };
-
-  return (
-    <div className="relative mb-4">
-      <div className="mb-2 flex items-start justify-between">
-        <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-          <i className="ri-code-s-slash-line text-text-primary" />
-          <span className="text-sm">{language || 'plaintext'}</span>
-        </div>
-        <button
-          onClick={handleCopy}
-          className="rounded border border-border-default bg-surface-secondary px-2 py-1 text-xs text-text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
-        >
-          {isCopied ? (
-            <i className="ri-check-line text-green-400" />
-          ) : (
-            <i className="ri-file-copy-line text-text-primary" />
-          )}
-          <span className="ml-1">{isCopied ? 'Copied!' : 'Copy code'}</span>
-        </button>
-      </div>
-      <CodeBlock className={className} language={language}>
-        {children}
-      </CodeBlock>
-    </div>
-  );
-};
-
 // Enhanced markdown components with better styling
 const createEnhancedMarkdownComponents = (citations = []) => {
   const baseComponents = {
@@ -84,23 +44,19 @@ const createEnhancedMarkdownComponents = (citations = []) => {
     li: ({ children }) => (
       <li className="leading-relaxed text-text-primary">{children}</li>
     ),
-    code: ({ children, className, language }) => {
+    code: ({ children, className }) => {
       const isBlock =
         className?.includes("language-") ||
         (typeof children === "string" && children.includes("\n"));
       return isBlock ? (
-        <EnhancedCodeBlock
-          children={children}
-          className={className}
-          language={language}
-        />
+        <CodeBlock className={className}>{children}</CodeBlock>
       ) : (
         <code className="inline-flex items-center rounded border border-border-default bg-code-bg px-1.5 py-0.5 text-xs font-mono text-text-primary">
           {children}
         </code>
       );
     },
-    pre: ({ children }) => <>{children}</>,
+    pre: ({ children }) => renderMarkdownPre(children),
     h1: ({ children }) => (
       <h1 className="mb-4 mt-6 text-2xl font-bold tracking-tight text-text-primary">
         {children}
@@ -249,7 +205,6 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
             <ReactMarkDown
               key={index}
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw, rehypeHighlight]}
               components={components}
             >
               {fixIncompleteMarkdown(part.text)}
@@ -281,6 +236,12 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
               let results = [];
               try {
                 results = JSON.parse(part.output);
+                if (!Array.isArray(results)) {
+                  throw new TypeError("Internet search results must be an array.");
+                }
+                results = results.filter(
+                  (source) => source && typeof source === "object",
+                );
               } catch (e) {
                 console.error("Failed to parse tool output:", e);
               }
@@ -292,44 +253,57 @@ export const MessageRenderer = ({ parts, citations = [] }) => {
                     Sources Found ({results.length})
                   </div>
                   <div className="space-y-2">
-                    {results.map((src, i) => (
-                      <div
-                        key={i}
-                        className="cursor-pointer rounded-lg border border-border-default bg-surface-primary p-3 transition-colors duration-150 hover:border-border-strong hover:bg-surface-secondary"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-strong bg-surface-secondary text-[9px] font-medium text-text-primary">
-                              {i + 1}
+                    {results.map((src, i) => {
+                      const safeUrl = getSafeExternalUrl(src.url);
+                      const sourceDomain = safeUrl
+                        ? new URL(safeUrl).hostname.replace(/^www\./, "")
+                        : null;
+
+                      return (
+                        <div
+                          key={i}
+                          className="rounded-lg border border-border-default bg-surface-primary p-3 transition-colors duration-150 hover:border-border-strong hover:bg-surface-secondary"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-strong bg-surface-secondary text-[9px] font-medium text-text-primary">
+                                {i + 1}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <div className="flex justify-between items-start">
-                              <h3 className="line-clamp-2 text-sm font-medium text-text-primary">
-                                {src.title || 'Untitled'}
-                              </h3>
-                              <span className="text-xs text-text-secondary">
-                                Source {i + 1}
-                              </span>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex justify-between items-start">
+                                <h3 className="line-clamp-2 text-sm font-medium text-text-primary">
+                                  {src.title || "Untitled"}
+                                </h3>
+                                <span className="text-xs text-text-secondary">
+                                  Source {i + 1}
+                                </span>
+                              </div>
+                              <p className="line-clamp-2 text-xs text-text-secondary">
+                                {src.content?.substring(0, 100) || "No preview available"}
+                              </p>
+                              {safeUrl ? (
+                                <a
+                                  href={safeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-text-primary hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+                                >
+                                  <i className="ri-external-link-line" />
+                                  <span className="max-w-[200px] truncate">
+                                    {sourceDomain}
+                                  </span>
+                                </a>
+                              ) : (
+                                <span className="mt-2 block text-xs text-text-muted">
+                                  Source URL unavailable
+                                </span>
+                              )}
                             </div>
-                            <p className="line-clamp-2 text-xs text-text-secondary">
-                              {src.content?.substring(0, 100) || 'No preview available'}
-                            </p>
-                            <a
-                              href={src.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-text-primary hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
-                            >
-                              <i className="ri-external-link-line" />
-                              <span className="truncate max-w-[200px]">
-                                {new URL(src.url).hostname.replace('www.', '')}
-                              </span>
-                            </a>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );

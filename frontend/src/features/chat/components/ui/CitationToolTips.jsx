@@ -1,8 +1,12 @@
 
-const CitationToolTips = ({ citation }) => {
-  const domain = citation.domain || citation.url;
+import { getSafeExternalUrl } from "../../shared/safeExternalUrl";
 
-  const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+const CitationToolTips = ({ citation }) => {
+  const safeUrl = getSafeExternalUrl(citation.url);
+  if (!safeUrl) return null;
+
+  const domain = new URL(safeUrl).hostname.replace(/^www\./, "");
+  const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
 
   return (
     <>
@@ -31,7 +35,7 @@ const CitationToolTips = ({ citation }) => {
           </span>
           {/* URL preview */}
           <span className="block truncate text-[11px] text-text-secondary">
-            {citation.url}
+            {safeUrl}
           </span>
         </span>
       </span>

@@ -10,9 +10,11 @@ import {
   createNewChat,
   deleteChat,
   setChats,
+  setChatsLoading,
   setCurrentChatId,
   setError,
-  setLoading,
+  setLoadingChatId,
+  setDeletingChatId,
 } from "../state/chat.slices";
 import { useDispatch, useSelector } from "react-redux";
 import { useCallback, useRef, useState } from "react";
@@ -22,7 +24,13 @@ export const useChat = () => {
   const chats = useSelector((state) => state.chat.chats);
   const [streamingParts, setStreamingParts] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [streamingChatId, setStreamingChatId] = useState(null);
+  const isSendingRef = useRef(false);
   const streamingPartsRef = useRef([]);
+  const chatLoadRequestRef = useRef(0);
+  const pendingChatLoadsRef = useRef(new Map());
+  const activeChatLoadRef = useRef(null);
   // Holds { message, chatId } of the last FAILED send attempt — only when the
   // stream never produced a "start" event, i.e. the backend almost certainly
   // never persisted the user message, so re-sending cannot duplicate it.
@@ -30,12 +38,14 @@ export const useChat = () => {
 
   const handleSendMessage = useCallback(
     async ({ message, chatId }) => {
+      if (isSendingRef.current) return;
+      isSendingRef.current = true;
       let resolvedChatId = chatId;
       let isDone = false;
       let streamStarted = false;
 
       dispatch(setError(null));
-      dispatch(setLoading(true));
+      setIsSending(true);
       setRetryPayload(null);
       streamingPartsRef.current = [];
       setStreamingParts([]);
@@ -51,22 +61,24 @@ export const useChat = () => {
 
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+            const chunkParts = buffer.split(/\r?\n\r?\n/);
+            buffer = done ? "" : chunkParts.pop() || "";
 
-            buffer += decoder.decode(value, { stream: true });
-            const chunkParts = buffer.split("\n\n");
-            buffer = chunkParts.pop() || "";
-
-            for (const line of chunkParts) {
-              if (!line.startsWith("data:")) continue;
-              const jsonStr = line.replace(/^data:\s*/, "").trim();
+            for (const eventBlock of chunkParts) {
+              const jsonStr = eventBlock
+                .split(/\r?\n/)
+                .filter((line) => line.startsWith("data:"))
+                .map((line) => line.slice(5).replace(/^ /, ""))
+                .join("\n")
+                .trim();
               if (!jsonStr) continue;
 
               let parsed;
               try {
                 parsed = JSON.parse(jsonStr);
               } catch (err) {
-                console.error("Failed to parse SSE JSON:", jsonStr, err);
+                console.error("Failed to parse SSE JSON event:", err);
                 continue;
               }
 
@@ -91,6 +103,7 @@ export const useChat = () => {
                 }
 
                 dispatch(setCurrentChatId(resolvedChatId));
+                setStreamingChatId(resolvedChatId);
                 setIsStreaming(true);
               }
 
@@ -209,6 +222,10 @@ export const useChat = () => {
                 isDone = true;
                 const finalChatId = resolvedChatId || parsed.aiMessage?.chat;
 
+                if (frame) {
+                  cancelAnimationFrame(frame);
+                  frame = null;
+                }
                 dispatch(
                   addNewMessage({
                     chatId: finalChatId,
@@ -222,8 +239,10 @@ export const useChat = () => {
 
                 setStreamingParts([]);
                 setIsStreaming(false);
+                setIsSending(false);
+                isSendingRef.current = false;
+                setStreamingChatId(null);
                 streamingPartsRef.current = [];
-                dispatch(setLoading(false));
               }
 
               if (parsed.type === "error") {
@@ -234,6 +253,7 @@ export const useChat = () => {
                 throw error;
               }
             }
+            if (done) break;
         }
 
         if (!isDone) {
@@ -242,6 +262,9 @@ export const useChat = () => {
       } catch (error) {
         console.error("SSE connection failed:", error);
         setIsStreaming(false);
+        setIsSending(false);
+        isSendingRef.current = false;
+        setStreamingChatId(null);
 
         // Pre-start failures leave no persisted user message on the backend,
         // so a Retry can safely re-send the same payload without doubling the
@@ -271,7 +294,6 @@ export const useChat = () => {
             code,
           }),
         );
-        dispatch(setLoading(false));
       }
     },
     [dispatch],
@@ -286,7 +308,7 @@ export const useChat = () => {
 
   const handleGetChats = useCallback(async () => {
     try {
-      dispatch(setLoading(true));
+      dispatch(setChatsLoading(true));
       const data = await getChats();
       const fetchedChats = data?.chats || [];
       dispatch(
@@ -297,6 +319,7 @@ export const useChat = () => {
               id: chat._id,
               title: chat.title,
               messages: [],
+              messagesLoaded: false,
               lastUpdated: chat.updatedAt,
             };
             return acc;
@@ -308,32 +331,55 @@ export const useChat = () => {
         setError(error.response?.data?.message || "Failed to fetch user data"),
       );
     } finally {
-      dispatch(setLoading(false));
+      dispatch(setChatsLoading(false));
     }
   }, [dispatch]);
 
   const handleOpenChat = useCallback(
     async (chatId) => {
+      dispatch(setCurrentChatId(chatId));
+
+      if (chats[chatId]?.messagesLoaded) {
+        activeChatLoadRef.current = null;
+        dispatch(setLoadingChatId(null));
+        return;
+      }
+
+      const existingRequestId = pendingChatLoadsRef.current.get(chatId);
+      if (existingRequestId) {
+        activeChatLoadRef.current = existingRequestId;
+        dispatch(setLoadingChatId(chatId));
+        return;
+      }
+
+      const requestId = ++chatLoadRequestRef.current;
+      pendingChatLoadsRef.current.set(chatId, requestId);
+      activeChatLoadRef.current = requestId;
+      dispatch(setLoadingChatId(chatId));
+
       try {
-        if (!chats[chatId]?.messages?.length) {
-          const data = await getMessages({ chatId });
-          const { messages } = data;
+        const data = await getMessages({ chatId });
+        const { messages } = data;
 
-          const formattedMessages = messages.map((msg) => ({
-            content: msg.content,
-            role: msg.role,
-            citations: msg.citations || [],
-            hasCitations: msg.hasCitations || false,
-            parts: msg.parts || [],
-          }));
+        const formattedMessages = messages.map((msg) => ({
+          content: msg.content,
+          role: msg.role,
+          citations: msg.citations || [],
+          hasCitations: msg.hasCitations || false,
+          parts: msg.parts || [],
+        }));
 
-          dispatch(addMessages({ chatId, messages: formattedMessages }));
-        }
-        dispatch(setCurrentChatId(chatId));
+        dispatch(addMessages({ chatId, messages: formattedMessages }));
       } catch (error) {
         dispatch(
           setError(error.response?.data?.message || "Failed to load message"),
         );
+      } finally {
+        pendingChatLoadsRef.current.delete(chatId);
+        if (activeChatLoadRef.current === requestId) {
+          activeChatLoadRef.current = null;
+          dispatch(setLoadingChatId(null));
+        }
       }
     },
     [chats, dispatch],
@@ -342,7 +388,7 @@ export const useChat = () => {
   const handleDeleteChat = useCallback(
     async (chatId) => {
       try {
-        dispatch(setLoading(true));
+        dispatch(setDeletingChatId(chatId));
         await deleteChatApi({ chatId });
         dispatch(deleteChat({ chatId }));
       } catch (error) {
@@ -350,7 +396,7 @@ export const useChat = () => {
           setError(error.response?.data?.message || "Unable to delete chat."),
         );
       } finally {
-        dispatch(setLoading(false));
+        dispatch(setDeletingChatId(null));
       }
     },
     [dispatch],
@@ -362,6 +408,8 @@ export const useChat = () => {
     handleOpenChat,
     handleDeleteChat,
     isStreaming,
+    isSending,
+    streamingChatId,
     streamingParts,
     retryPayload,
     retryLastMessage,

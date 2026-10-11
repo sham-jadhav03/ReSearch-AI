@@ -28,7 +28,9 @@ const DashBoard = () => {
 
   const chats = useSelector((state) => state.chat.chats);
   const currentChatId = useSelector((state) => state.chat.currentChatId);
-  const isLoading = useSelector((state) => state.chat.isLoading);
+  const isLoadingChats = useSelector((state) => state.chat.isLoadingChats);
+  const loadingChatId = useSelector((state) => state.chat.loadingChatId);
+  const deletingChatId = useSelector((state) => state.chat.deletingChatId);
   const error = useSelector((state) => state.chat.error);
 
   const currentMessages = useMemo(
@@ -49,14 +51,14 @@ const DashBoard = () => {
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight <= 100;
 
-    if (isStreaming) {
+    if (isStreaming && chat.streamingChatId === currentChatId) {
       if (isNearBottom) {
         container.scrollTop = container.scrollHeight;
       }
     } else {
       messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [currentMessages, streamingParts, isStreaming]);
+  }, [currentMessages, streamingParts, isStreaming, chat.streamingChatId, currentChatId]);
 
   useEffect(() => {
     handleGetChats();
@@ -81,7 +83,7 @@ const DashBoard = () => {
     e?.preventDefault();
 
     const trimmedMessage = chatInput.trim();
-    if (!trimmedMessage || isLoading) {
+    if (!trimmedMessage || chat.isSending) {
       return;
     }
 
@@ -111,7 +113,19 @@ const DashBoard = () => {
     dispatch(setError(null));
   };
 
-  const isEmpty = currentMessages.length === 0 && !isStreaming && !isLoading;
+  const isLoadingCurrentChat =
+    loadingChatId !== null && loadingChatId === currentChatId;
+  const isStreamingCurrentChat =
+    isStreaming && chat.streamingChatId === currentChatId;
+  const isSendingCurrentChat =
+    chat.isSending &&
+    !isStreaming &&
+    (!chat.streamingChatId || chat.streamingChatId === currentChatId);
+  const isEmpty =
+    currentMessages.length === 0 &&
+    !isStreamingCurrentChat &&
+    !isSendingCurrentChat &&
+    !isLoadingCurrentChat;
 
   return (
     <main className="flex h-screen w-full overflow-hidden bg-app text-text-primary">
@@ -122,6 +136,8 @@ const DashBoard = () => {
         openChat={openChat}
         chats={chats}
         currentChatId={currentChatId}
+        isLoadingChats={isLoadingChats}
+        deletingChatId={deletingChatId}
         isMobileOpen={isMobileSidebarOpen}
         onClose={() => setIsMobileSidebarOpen(false)}
       />
@@ -164,16 +180,32 @@ const DashBoard = () => {
             {/* Empty state */}
             {isEmpty && <EmptyState handleSuggestion={handleSuggestion} />}
 
+            {isLoadingCurrentChat && (
+              <div
+                role="status"
+                className="py-10 text-center text-sm text-text-secondary"
+              >
+                Loading conversation...
+              </div>
+            )}
+
             {/* Message list */}
             {currentMessages.length > 0 && (
               <MessageList messages={currentMessages} />
             )}
 
             {/* Thinking dots — before first token */}
-            {isLoading && !isStreaming && <ThinkingIndicator />}
+            {isSendingCurrentChat && (
+              <ThinkingIndicator text="Connecting..." />
+            )}
 
             {/* Streaming bubble */}
-            {isStreaming && <StreamingBubble streamingParts={streamingParts} elapsedTime={elapsedTime} />}
+            {isStreamingCurrentChat && (
+              <StreamingBubble
+                streamingParts={streamingParts}
+                elapsedTime={elapsedTime}
+              />
+            )}
 
             <div ref={messageEndRef} />
           </div>
@@ -185,7 +217,7 @@ const DashBoard = () => {
             chatInput={chatInput}
             setChatInput={setChatInput}
             handleSubmit={handleSubmit}
-            isLoading={isLoading}
+            isLoading={chat.isSending}
             textAreaRef={textAreaRef}
             suggestions={SUGGESTIONS}
           />

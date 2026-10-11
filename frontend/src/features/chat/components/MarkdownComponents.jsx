@@ -1,5 +1,7 @@
+import React from "react";
 import CodeBlock from "../components/ui/CodeBlock";
 import CitationChip from "./ui/CitationChip";
+import { renderMarkdownPre } from "../shared/renderMarkdownPre";
 const processStringWithCitations = (text, citations) => {
   if (typeof text !== "string") return text;
 
@@ -79,7 +81,7 @@ const createMarkdownComponents = (citations = DEFAULT_CITATIONS) => ({
       </code>
     );
   },
-  pre: ({ children }) => <>{children}</>,
+  pre: ({ children }) => renderMarkdownPre(children),
   h1: ({ children }) => (
     <h1 className="mb-6 mt-8 text-2xl font-semibold tracking-tight text-text-primary">
       {(children)}

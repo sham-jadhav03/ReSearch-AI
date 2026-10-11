@@ -1,11 +1,10 @@
-import { useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { lazy, Suspense, useState } from "react";
+
+const CodeSyntaxBlock = lazy(() => import("./CodeSyntaxBlock"));
 
 const CodeBlock = ({ children, className }) => {
   const [copied, setCopied] = useState(false);
-  const language = className?.replace("language-", "") || "plain";
-  const languages = className?.replace("language-", "") || null;
+  const language = className?.match(/(?:^|\s)language-([\w-]+)/)?.[1] || null;
 
   // Safely extract plain text from children for clipboard.
   // Handles string, array of strings/elements, and nested React elements.
@@ -30,7 +29,7 @@ const CodeBlock = ({ children, className }) => {
   return (
     <div className="group relative my-6 overflow-hidden rounded-lg border border-border-default bg-code-bg shadow-lg shadow-black/20">
       <div className="flex items-center justify-between border-b border-border-default bg-surface-primary px-4 py-2.5 text-xs text-text-secondary">
-        {languages && (
+        {language && (
           <span className="font-mono uppercase tracking-wider">{language}</span>
         )}
         <button
@@ -46,18 +45,15 @@ const CodeBlock = ({ children, className }) => {
         </button>
       </div>
       <div className="overflow-x-auto p-4">
-        <SyntaxHighlighter
-          language={language}
-          style={oneDark}
-          PreTag={"div"}
-          customStyle={{
-            margin: 0,
-            background: "transparent",
-            color: "var(--color-text-primary)",
-          }}
+        <Suspense
+          fallback={
+            <pre className="m-0 bg-transparent text-sm text-text-primary">
+              <code>{plainText}</code>
+            </pre>
+          }
         >
-          {plainText}
-        </SyntaxHighlighter>
+          <CodeSyntaxBlock language={language} code={plainText} />
+        </Suspense>
       </div>
     </div>
   );

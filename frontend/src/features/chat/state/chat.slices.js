@@ -5,7 +5,9 @@ const chatSlice = createSlice({
   initialState: {
     chats: {},
     currentChatId: null,
-    isLoading: false,
+    isLoadingChats: false,
+    loadingChatId: null,
+    deletingChatId: null,
     error: null,
   },
   reducers: {
@@ -15,6 +17,7 @@ const chatSlice = createSlice({
         id: chatId,
         title,
         messages: [],
+        messagesLoaded: true,
         lastUpdated: new Date().toISOString(),
       };
     },
@@ -37,10 +40,12 @@ const chatSlice = createSlice({
           id: chatId,
           title: "New Chat",
           messages: [],
+          messagesLoaded: false,
           lastUpdated: new Date().toISOString(),
         };
       };
       state.chats[chatId].messages.push(...messages);
+      state.chats[chatId].messagesLoaded = true;
     },
     deleteChat: (state, action) => {
       const { chatId } = action.payload;
@@ -56,8 +61,14 @@ const chatSlice = createSlice({
     setCurrentChatId: (state, action) => {
       state.currentChatId = action.payload;
     },
-    setLoading: (state, action) => {
-      state.isLoading = action.payload;
+    setChatsLoading: (state, action) => {
+      state.isLoadingChats = action.payload;
+    },
+    setLoadingChatId: (state, action) => {
+      state.loadingChatId = action.payload;
+    },
+    setDeletingChatId: (state, action) => {
+      state.deletingChatId = action.payload;
     },
     /**
      * Sets the error state. Pass `null` to clear the error banner.
@@ -71,7 +82,9 @@ const chatSlice = createSlice({
 export const {
   setChats,
   setCurrentChatId,
-  setLoading,
+  setChatsLoading,
+  setLoadingChatId,
+  setDeletingChatId,
   setError,
   createNewChat,
   addMessages,
