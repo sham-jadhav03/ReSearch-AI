@@ -16,29 +16,20 @@ const Landing = () => {
 
       {/* Hero */}
       <section className="hero">
-        <div className="hero__glow-purple" />
-        <div className="hero__glow-blue" />
-
-        {/* Badge */}
         <div className="hero__badge">
           <span className="hero__badge-dot" />
           Powered by Gemini 2.5 · Live web search
         </div>
 
-        {/* Headline */}
         <h1 className="hero__headline">
-          Ask anything.{" "}
-          <span className="hero__headline-gradient">Get answers</span> backed by
-          the web.
+          Ask anything. Get answers backed by the web.
         </h1>
 
-        {/* Subheadline */}
         <p className="hero__subheadline">
           ResearchAI retrieves real-time information, reasons over it, and
           delivers source-backed answers — not guesses.
         </p>
 
-        {/* CTAs */}
         <div className="hero__ctas">
           <button className="btn-primary" onClick={() => navigate("/login")}>
             Start researching free
@@ -55,7 +46,6 @@ const Landing = () => {
           </button>
         </div>
 
-        {/* Stats */}
         <div className="hero__stats">
           {STATS.map(({ value, label }) => (
             <div key={label} className="hero__stat">
@@ -65,9 +55,6 @@ const Landing = () => {
           ))}
         </div>
       </section>
-
-
-         {/* feature */}
       <section id="features" className="features">
         <div className="features__header">
           <p className="section-label">WHAT IT DOES</p>
@@ -82,7 +69,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* How it works */}
       <section className="pipeline">
         <p className="section-label">THE PIPELINE</p>
         <h2 className="pipeline__title">How every answer is built</h2>
@@ -101,9 +87,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Bottom CTA */}
       <section className="cta-section">
-        <div className="cta-section__glow" />
         <h2 className="cta-section__headline">
           Stop guessing.
           <br />
@@ -117,7 +101,6 @@ const Landing = () => {
         </button>
       </section>
 
-      {/* Footer */}
       <footer className="footer">
         <div className="footer__logo">
           <div className="footer__logo-icon">

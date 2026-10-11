@@ -33,11 +33,11 @@ const Login = () => {
 
   return (
     <>
-      <section className="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
+      <section className="min-h-screen bg-app px-4 py-10 text-text-primary sm:px-6 lg:px-8">
         <div className="mx-auto flex min-h-[85vh] w-full max-w-5xl items-center justify-center">
-          <div className="w-full max-w-md rounded-2xl border border-[#31b8c6] bg-zinc-900/70 p-8 shadow-2xl shadow-black/50 backdrop-blur">
-            <h1 className="text-3xl font-bold text-[#31b8c6]">Welcome Back</h1>
-            <p className="mt-2 text-sm text-zinc-300">
+          <div className="w-full max-w-md rounded-lg border border-border-default bg-surface-primary p-6 shadow-2xl shadow-black/30 sm:p-8">
+            <h1 className="text-3xl font-bold text-text-primary">Welcome Back</h1>
+            <p className="mt-2 text-sm text-text-secondary">
               Sign in with your email and password.
             </p>
 
@@ -50,7 +50,7 @@ const Login = () => {
               <div>
                 <label
                   htmlFor="email"
-                  className="mb-2 block text-sm font-medium text-zinc-200"
+                  className="mb-2 block text-sm font-medium text-text-secondary"
                 >
                   Email
                 </label>
@@ -63,43 +63,43 @@ const Login = () => {
                   }}
                   placeholder="Enter your email"
                   required
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-zinc-100 outline-none ring-0 transition focus:border-[#31b8c6] focus:shadow-[0_0_0_3px_rgba(49,184,198,0.25)]"
+                  className="w-full rounded-lg border border-border-default bg-app px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-text-secondary focus:ring-2 focus:ring-text-secondary/30"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="password"
-                  className="mb-2 block  text-sm font-medium text-zinc-200"
+                  className="mb-2 block text-sm font-medium text-text-secondary"
                 >
                   Password
                 </label>
                 <input
                   id="password"
                   type="password"
-                  placeholder="Enter your Password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                   }}
                   required
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-zinc-100 outline-none ring-0 transition focus:border-[#31b8c6] focus:shadow-[0_0_0_3px_rgba(49,184,198,0.25)]"
+                  className="w-full rounded-lg border border-border-default bg-app px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-text-secondary focus:ring-2 focus:ring-text-secondary/30"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full rounded-lg bg-[#31b8c6] px-4 py-3 font-semibold text-zinc-950 transition hover:bg-[#45c7d4] focus:outline-none focus:shadow-[0_0_0_3px_rgba(49,184,198,0.35)] cursor-pointer active:scale-[0.9]"
+                className="w-full cursor-pointer rounded-lg bg-primary px-4 py-3 font-semibold text-primary-fg transition hover:bg-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary active:scale-[0.98]"
               >
                 Login
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-zinc-300">
+            <p className="mt-6 text-center text-sm text-text-secondary">
               Don&apos;t have an account?{" "}
               <Link
                 to="/register"
-                className="font-semibold text-[#31b8c6] transition hover:text-[#45c7d4]"
+                className="font-semibold text-text-primary underline underline-offset-4 transition hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
               >
                 Register
               </Link>

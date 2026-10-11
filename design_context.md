@@ -79,7 +79,8 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 |---------|--------|---------------|----------------|----------------------|
 | **App Shell** | Implemented | `routes/AppRoutes.jsx` (LoadingFallback `bg-app`), `pages/DashBoard.jsx` (`<main>` `bg-app`, header `bg-surface-primary`/`border-border-default`, input container `bg-app`/`border-border-default`), `pages/Profile.jsx` (outer `bg-app`, card `bg-surface-primary`/`border-border-default`) | Browser verification not performed; tokens present in code | Visual inspection of app background |
 | **Sidebar** | Implemented | `features/chat/components/Sidebar.jsx` | Desktop `<aside>` + mobile drawer `bg-surface-primary`/`border-border-default`, top-strip + user-profile `border-border-default`, secondary text `text-text-secondary` — **semantic token**: `bg-sidebar` (`#0F0F0F`) is the intended sidebar surface per design-token hierarchy; current code uses `bg-surface-primary` as a practical extension of the primary surface family. No brand/warning/error states were changed. | Visual inspection of sidebar |
-| **Navbar** | Not started | `features/chat/components/Navbar.jsx`, `styles/navbar.css` | Update background, text, icon colors | Visual inspection of navbar |
+| **Navbar** | Implemented | `features/chat/components/Navbar.jsx`, `styles/navbar.css` | Neutral fixed navigation surface, responsive link hiding, white primary login action, and visible keyboard focus states are in place | Build passed; lint passed; browser visual inspection pending |
+| **Landing Page** | Implemented | `features/chat/pages/Landing.jsx`, `styles/landing.css` | Semantic dark tokens, neutral borders, a restrained green status cue, responsive mobile layout, and no decorative gradients or glows | Build passed; lint passed; browser visual inspection pending |
 | **Header** (DashBoard) | Implemented | `features/chat/pages/DashBoard.jsx` | Header `bg-surface-primary`/`border-border-default`, chat title `text-text-secondary` — tokens present in code | Visual inspection of header |
 | **Message List** | Implemented | `features/chat/components/MessageList.jsx` | User/AI bubble backgrounds (`bg-surface-secondary`/`border-border-default`/`text-text-primary`), AI bubble transparent with `text-text-primary`; citation footer intentionally untouched (separate phase) | Build ✓, Lint ✓; browser verification not performed (dev server unavailable) |
 | **Streaming Responses** | Not started | `features/chat/components/StreamingBubble.jsx`, `MessageRenderer.jsx` | Update text, cursor, background, tool call colors | Visual inspection of streaming content |
@@ -91,7 +92,7 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 | **Progress Indicators** | Not started | `features/chat/components/StreamingProgress.jsx` | Update progress bar, text, background colors | Visual inspection of progress |
 | **Loading States** | Not started | `features/chat/components/LoadingIndicator.jsx`, `ThinkingIndicator.jsx` | Update spinner, text, pulse colors | Visual inspection of loading states |
 | **Error States** | Not started | `features/chat/components/ErrorBanner.jsx` | Update error/warning/info variant colors, border, text | Visual inspection of error banners |
-| **Authentication Pages** | Not started | `features/auth/pages/Login.jsx`, `Register.jsx` | Update form backgrounds, input, button, text colors | Visual inspection of auth pages |
+| **Authentication Pages** | Implemented | `features/auth/pages/Login.jsx`, `Register.jsx` | Login, registration, and email-verification confirmation use the shared token palette, accessible neutral focus rings, and responsive panels. Auth routes, validation, loading, and registration confirmation behavior were preserved. | Build passed; lint passed; browser visual inspection pending |
 | **Dialogs/Modals** | Not started | Various (to be identified) | Update backdrop, dialog background, text, button colors | Visual inspection of dialogs |
 | **Dropdowns/Popovers** | Not started | `ChatInput.jsx` suggestion popover, others | Update background, text, border, hover colors | Visual inspection of popovers |
 | **Responsive Layouts** | Not started | All components | Test color application at mobile/tablet/desktop breakpoints | Visual inspection across breakpoints |
@@ -134,3 +135,12 @@ See `frontend_context.md` for complete frontend architecture documentation. Key 
 - Design tokens are initial proposals subject to accessibility validation
 - Migration should proceed incrementally with continuous verification
 - Do not modify application code during documentation-only phases
+
+## F. Phase 4 Implementation Record (Current)
+
+- **Status**: Navbar, Landing Page, and Authentication Pages are implemented.
+- **Navbar**: `frontend/src/features/chat/styles/navbar.css` now uses the semantic dark tokens for its fixed surface, borders, navigation links, login action, hover states, responsive mobile behavior, and keyboard focus rings. `Navbar.jsx` behavior was not changed.
+- **Landing Page**: `frontend/src/features/chat/pages/Landing.jsx` and `frontend/src/features/chat/styles/landing.css` now use restrained neutral research-workspace styling. Decorative gradient/glow elements and the gradient headline treatment were removed. CTA behavior is unchanged. The layout includes mobile rules for calls to action, statistics, pipeline steps, and the footer.
+- **Authentication**: `frontend/src/features/auth/pages/Login.jsx` and `Register.jsx` now use `bg-app`, surface, border, text, and primary-action tokens. Login, registration, loading, validation, routing, and the email-verification confirmation transition are unchanged. Placeholder copy was corrected to "Choose your username" and "Enter your password."
+- **Verification**: `npm run build` passed with Vite 8 in 1.09s. It reports the existing dashboard bundle-size advisory only. `npm run lint` passed with 0 errors. Browser visual review remains pending.
+- **Next Task**: Phase 6/7 - migrate streaming and markdown presentation in `StreamingBubble.jsx`, `MessageRenderer.jsx`, and `MarkdownComponents.jsx`. Preserve SSE parsing, cancellation, `useChat.js` requestAnimationFrame batching, citation behavior, and tool-call data flow.

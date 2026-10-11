@@ -34,25 +34,25 @@ const Register = () => {
 
   if (registered) {
     return (
-      <section className="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
+      <section className="min-h-screen bg-app px-4 py-10 text-text-primary sm:px-6 lg:px-8">
         <div className="mx-auto flex min-h-[85vh] w-full max-w-5xl items-center justify-center">
-          <div className="w-full max-w-md rounded-2xl border border-[#31b8c6]/40 bg-zinc-900/70 p-8 shadow-2xl shadow-black/50 backdrop-blur text-center">
-            <div className="mx-auto w-16 h-16 rounded-full bg-[#31b8c6]/15 flex items-center justify-center mb-6">
-              <i className="ri-mail-send-line text-3xl text-[#31b8c6]" />
+          <div className="w-full max-w-md rounded-lg border border-border-default bg-surface-primary p-6 text-center shadow-2xl shadow-black/30 sm:p-8">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-border-strong bg-surface-secondary">
+              <i className="ri-mail-send-line text-3xl text-text-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-[#31b8c6]">Check your inbox</h1>
-            <p className="mt-3 text-sm text-zinc-300 leading-relaxed">
+            <h1 className="text-3xl font-bold text-text-primary">Check your inbox</h1>
+            <p className="mt-3 text-sm leading-relaxed text-text-secondary">
               We sent a verification link to{" "}
-              <span className="font-medium text-zinc-100">{email}</span>.
+              <span className="font-medium text-text-primary">{email}</span>.
               Open it to activate your account — then log in.
             </p>
-            <p className="mt-4 text-xs text-zinc-500">
+            <p className="mt-4 text-xs text-text-muted">
               The link expires in 1 hour. If it doesn&apos;t arrive, you can
               request a new one from the login page.
             </p>
             <Link
               to="/login"
-              className="mt-8 inline-block w-full rounded-lg bg-[#31b8c6] px-4 py-3 font-semibold text-zinc-950 transition hover:bg-[#45c7d4]"
+              className="mt-8 inline-block w-full rounded-lg bg-primary px-4 py-3 font-semibold text-primary-fg transition hover:bg-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary"
             >
               Go to Login
             </Link>
@@ -64,14 +64,14 @@ const Register = () => {
 
   return (
     <>
-      <section className="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
+      <section className="min-h-screen bg-app px-4 py-10 text-text-primary sm:px-6 lg:px-8">
         <div className="mx-auto flex min-h-[85vh] w-full max-w-5xl items-center justify-center">
-          <div className="w-full max-w-md rounded-2xl border border-[#31b8c6]/40 bg-zinc-900/70 p-8 shadow-2xl shadow-black/50 backdrop-blur">
-            <h1 className="text-3xl font-bold text-[#31b8c6]">
+          <div className="w-full max-w-md rounded-lg border border-border-default bg-surface-primary p-6 shadow-2xl shadow-black/30 sm:p-8">
+            <h1 className="text-3xl font-bold text-text-primary">
               Create Account
             </h1>
 
-            <p className="mt-2 text-sm text-zinc-300">
+            <p className="mt-2 text-sm text-text-secondary">
               Register with your username, email, and password.
             </p>
 
@@ -84,7 +84,7 @@ const Register = () => {
               <div>
                 <label
                   htmlFor="username"
-                  className="mb-2 block text-sm font-medium text-zinc-200"
+                  className="mb-2 block text-sm font-medium text-text-secondary"
                 >
                   Username
                 </label>
@@ -95,15 +95,15 @@ const Register = () => {
                   onChange={(e) => {
                     setUsername(e.target.value);
                   }}
-                  placeholder="Choose you username"
+                  placeholder="Choose your username"
                   required
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-zinc-100 outline-none ring-0 transition focus:border-[#31b8c6] focus:shadow-[0_0_0_3px_rgba(49,184,198,0.25)]"
+                  className="w-full rounded-lg border border-border-default bg-app px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-text-secondary focus:ring-2 focus:ring-text-secondary/30"
                 />
               </div>
               <div>
                 <label
                   htmlFor="email"
-                  className="mb-2 block text-sm font-medium text-zinc-200"
+                  className="mb-2 block text-sm font-medium text-text-secondary"
                 >
                   Email
                 </label>
@@ -116,43 +116,43 @@ const Register = () => {
                   }}
                   placeholder="Enter your email address"
                   required
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-zinc-100 outline-none ring-0 transition focus:border-[#31b8c6] focus:shadow-[0_0_0_3px_rgba(49,184,198,0.25)]"
+                  className="w-full rounded-lg border border-border-default bg-app px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-text-secondary focus:ring-2 focus:ring-text-secondary/30"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="password"
-                  className="mb-2 block  text-sm font-medium text-zinc-200"
+                  className="mb-2 block text-sm font-medium text-text-secondary"
                 >
                   Password
                 </label>
                 <input
                   id="password"
                   type="password"
-                  placeholder="Enter your Password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                   }}
                   required
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-zinc-100 outline-none ring-0 transition focus:border-[#31b8c6] focus:shadow-[0_0_0_3px_rgba(49,184,198,0.25)]"
+                  className="w-full rounded-lg border border-border-default bg-app px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-text-secondary focus:ring-2 focus:ring-text-secondary/30"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-[#31b8c6] px-4 py-3 font-semibold text-zinc-950 transition hover:bg-[#45c7d4] focus:outline-none focus:shadow-[0_0_0_3px_rgba(49,184,198,0.35)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full cursor-pointer rounded-lg bg-primary px-4 py-3 font-semibold text-primary-fg transition hover:bg-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Creating account..." : "Register"}
               </button>
             </form>
-            <p className="mt-6 text-center text-sm text-zinc-300">
+            <p className="mt-6 text-center text-sm text-text-secondary">
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="font-semibold text-[#31b8c6] transition hover:text-[#45c7d4]"
+                className="font-semibold text-text-primary underline underline-offset-4 transition hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
               >
                 Login
               </Link>
