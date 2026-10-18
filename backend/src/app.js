@@ -20,8 +20,9 @@ app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 app.use(morgan("dev", {
   skip: (req, res) => {
-    // Skip logging the query string for /verify-email to prevent verification tokens from being logged
-    return req.path.includes('/verify-email') && req.query.token;
+    const isEmailVerification = req.path.includes("/verify-email") && req.query.token;
+    const isGoogleOAuthCallback = req.path === "/api/auth/google/callback";
+    return isEmailVerification || isGoogleOAuthCallback;
   },
 }));
 app.use(

@@ -3,6 +3,25 @@ import userModel from "../models/user.model.js";
 import { sendEmail } from "../services/mail.service.js";
 import jwt from "jsonwebtoken";
 
+const setAuthCookie = (res, user) => {
+  const isProd = config.NODE_ENV === "production";
+  const token = jwt.sign(
+    {
+      id: user._id,
+      username: user.username,
+    },
+    config.JWT_SECRET,
+    { expiresIn: "7d" },
+  );
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    maxAge: 7 * 24 * 3600 * 1000,
+  });
+};
+
 /**
  * @desc Register a new user
  * @route POST /api/auth/register
@@ -147,22 +166,7 @@ export const login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        username: user.username,
-      },
-      config.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-
-    const isProd = config.NODE_ENV === "production";
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "none" : "lax",
-      maxAge: 7 * 24 * 3600 * 1000,
-    });
+    setAuthCookie(res, user);
 
     res.status(200).json({
       message: "Login successful",
@@ -180,6 +184,17 @@ export const login = async (req, res) => {
       success: false,
     });
   }
+};
+
+export const googleLogin = (req, res) => {
+  if (!req.user) {
+    return res.redirect(
+      new URL("/login?error=google_auth_failed", config.CLIENT_URL).toString(),
+    );
+  }
+
+  setAuthCookie(res, req.user);
+  return res.redirect(config.CLIENT_URL);
 };
 
 /**

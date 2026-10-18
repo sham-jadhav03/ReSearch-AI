@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { useSelector } from "react-redux";
+import GoogleIcon from "../components/GoogleIcon";
+import { googleLoginUrl } from "../services/auth.api";
+
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +17,8 @@ const Login = () => {
   const { handleLogin } = useAuth();
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const googleAuthFailed = searchParams.get("error") === "google_auth_failed";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,15 +41,28 @@ const Login = () => {
       <section className="min-h-screen bg-app px-4 py-10 text-text-primary sm:px-6 lg:px-8">
         <div className="mx-auto flex min-h-[85vh] w-full max-w-5xl items-center justify-center">
           <div className="w-full max-w-md rounded-lg border border-border-default bg-surface-primary p-6 shadow-2xl shadow-black/30 sm:p-8">
-            <h1 className="text-3xl font-bold text-text-primary">Welcome Back</h1>
+            <h1 className="text-3xl font-bold text-text-primary">
+              Welcome Back
+            </h1>
             <p className="mt-2 text-sm text-text-secondary">
               Sign in with your email and password.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               {error && (
-                <p role="alert" className="rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-200">
+                <p
+                  role="alert"
+                  className="rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-200"
+                >
                   {error}
+                </p>
+              )}
+              {googleAuthFailed && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-200"
+                >
+                  Google sign-in failed. Please try again.
                 </p>
               )}
               <div>
@@ -94,6 +112,10 @@ const Login = () => {
                 Login
               </button>
             </form>
+
+            <div>
+              <GoogleIcon googleLoginUrl={googleLoginUrl} />
+            </div>
 
             <p className="mt-6 text-center text-sm text-text-secondary">
               Don&apos;t have an account?{" "}

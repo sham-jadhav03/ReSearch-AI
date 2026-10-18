@@ -18,13 +18,17 @@ export const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       minlength: [6, "Password must be at least 6 characters long"],
       maxlength: [72, "Password must be at most 72 characters long"],
       validate: {
-        validator: (value) => Buffer.byteLength(value, "utf8") <= 72,
+        validator: (value) => !value || Buffer.byteLength(value, "utf8") <= 72,
         message: "Password must not exceed 72 bytes",
       },
+    },
+    googleId: {
+      type: String,
+      select: false,
     },
     verified: {
       type: Boolean,
@@ -40,10 +44,12 @@ userSchema.pre("save", async function () {
 });
 
 userSchema.methods.comparePassword = function (candidatePassword) {
+  if (!this.password) return Promise.resolve(false);
   return bcrypt.compare(candidatePassword, this.password);
 };
 
 userSchema.index({ verified: 1 });
+userSchema.index({ googleId: 1 }, { unique: true, sparse: true });
 
 const userModel = mongoose.model("User", userSchema);
 

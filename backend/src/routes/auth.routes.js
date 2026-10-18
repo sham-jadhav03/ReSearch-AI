@@ -1,6 +1,10 @@
 import express from "express";
+import cookieSession from "cookie-session";
+import { config } from "../config/config.js";
+import passport from "../config/passport.js";
 import {
   getMe,
+  googleLogin,
   login,
   logout,
   register,
@@ -20,6 +24,40 @@ import {
 } from "../middlewares/authRateLimit.middleware.js";
 
 const router = express.Router();
+
+router.use(
+  "/google",
+  cookieSession({
+    name: "google-oauth-state",
+    keys: [config.JWT_SECRET],
+    maxAge: 10 * 60 * 1000,
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/api/auth/google",
+  }),
+  passport.initialize(),
+);
+
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["openid", "email", "profile"],
+    session: false,
+  }),
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: new URL(
+      "/login?error=google_auth_failed",
+      config.CLIENT_URL,
+    ).toString(),
+  }),
+  googleLogin,
+);
 
 /**
  * @route POST /api/auth/register
