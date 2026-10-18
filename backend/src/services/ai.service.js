@@ -50,11 +50,20 @@ export const generateResponse = async (messages, onChunk, signal) => {
   let lastError;
 
   for (const modelId of FALLBACK_CHAIN) {
+    let emittedChunks = false;
+    const emitChunk = onChunk
+      ? (event) => {
+          emittedChunks = true;
+          onChunk(event);
+        }
+      : undefined;
+
     try {
-      return await runAgent(modelId, messages, onChunk, signal);
+      return await runAgent(modelId, messages, emitChunk, signal);
     } catch (err) {
       lastError = err;
       if (signal?.aborted) throw err;
+      if (emittedChunks) throw err;
       console.warn(`Model ${modelId} failed, trying next in fallback chain:`, err.message);
     }
   }
@@ -79,6 +88,8 @@ const runAgent = async (modelId, messages, onChunk, signal) => {
   let finalMessage = "";
 
   const parts = [];
+  const toolCallIdsByIndex = new Map();
+  const toolCallAliases = new Map();
   for await (const item of stream) {
     const [chunk] = Array.isArray(item) ? item : [item];
 
@@ -96,9 +107,16 @@ const runAgent = async (modelId, messages, onChunk, signal) => {
       msgType === "tool" || chunk?.constructor?.name?.includes("ToolMessage");
 
     if (isAIMessage) {
-      handleAIChunk(chunk, parts, onChunk, (text) => (finalMessage += text));
+      handleAIChunk(
+        chunk,
+        parts,
+        onChunk,
+        (text) => (finalMessage += text),
+        toolCallIdsByIndex,
+        toolCallAliases,
+      );
     } else if (isToolMessage) {
-      handleToolChunk(chunk, parts, onChunk);
+      handleToolChunk(chunk, parts, onChunk, toolCallAliases);
     }
   }
 
@@ -111,12 +129,35 @@ const runAgent = async (modelId, messages, onChunk, signal) => {
   };
 };
 
-const handleAIChunk = (chunk, parts, onChunk, appendText) => {
-  const toolCallChunks = chunk.tool_call_chunks ?? [];
+const handleAIChunk = (
+  chunk,
+  parts,
+  onChunk,
+  appendText,
+  toolCallIdsByIndex,
+  toolCallAliases,
+) => {
+  const hasToolCallChunks = chunk.tool_call_chunks?.length > 0;
+  const toolCallChunks = hasToolCallChunks
+    ? chunk.tool_call_chunks
+    : (chunk.tool_calls ?? []).map((toolCall) => ({
+        ...toolCall,
+        args:
+          typeof toolCall.args === "string"
+            ? toolCall.args
+            : JSON.stringify(toolCall.args ?? {}),
+      }));
 
   if (toolCallChunks.length > 0) {
     for (const tc of toolCallChunks) {
-      const toolCallId = tc.id || `tool-${tc.index}`;
+      const hasIndex = tc.index !== undefined && tc.index !== null;
+      const toolCallId = hasIndex
+        ? toolCallIdsByIndex.get(tc.index) || tc.id || `tool-${tc.index}`
+        : tc.id;
+      if (!toolCallId) continue;
+      if (hasIndex) toolCallIdsByIndex.set(tc.index, toolCallId);
+      if (tc.id) toolCallAliases.set(tc.id, toolCallId);
+
       const existingToolIndex = parts.findLastIndex(
         (part) => part.type === "dynamic-tool" && part.toolCallId === toolCallId,
       );
@@ -148,7 +189,9 @@ const handleAIChunk = (chunk, parts, onChunk, appendText) => {
           toolPart?.type === "dynamic-tool" &&
           toolPart.state === "streaming"
         ) {
-          toolPart.args = (toolPart.args || "") + tc.args;
+          toolPart.args = hasToolCallChunks
+            ? (toolPart.args || "") + tc.args
+            : tc.args;
         }
         onChunk?.({
           type: "tool-call-delta",
@@ -182,21 +225,52 @@ const handleAIChunk = (chunk, parts, onChunk, appendText) => {
   }
 };
 
-const handleToolChunk = (chunk, parts, onChunk) => {
-  const toolCallId = chunk.tool_call_id || chunk.toolCallId;
-  if (!toolCallId) {
-    console.error("handleToolChunk: missing toolCallId on tool chunk", chunk);
+const handleToolChunk = (chunk, parts, onChunk, toolCallAliases) => {
+  const reportedToolCallId = chunk.tool_call_id || chunk.toolCallId;
+  if (!reportedToolCallId) {
+    console.error("handleToolChunk: missing toolCallId on tool chunk");
     return;
   }
+  const toolCallId = toolCallAliases.get(reportedToolCallId) || reportedToolCallId;
 
-  const activeToolIndex = parts.findLastIndex(
+  let activeToolIndex = parts.findLastIndex(
     (part) =>
       part.type === "dynamic-tool" && part.toolCallId === toolCallId,
   );
 
   if (activeToolIndex === -1) {
-    console.error("handleToolChunk: no matching tool part found for toolCallId", toolCallId);
-    return;
+    const pendingToolIndexes = parts.reduce((indexes, part, index) => {
+      if (
+        part.type === "dynamic-tool" &&
+        part.state === "streaming" &&
+        (!chunk.name || part.toolName === chunk.name)
+      ) {
+        indexes.push(index);
+      }
+      return indexes;
+    }, []);
+
+    if (pendingToolIndexes.length === 1) {
+      activeToolIndex = pendingToolIndexes[0];
+      toolCallAliases.set(reportedToolCallId, parts[activeToolIndex].toolCallId);
+    }
+  }
+
+  if (activeToolIndex === -1) {
+    const toolName = chunk.name || "unknown-tool";
+    activeToolIndex = parts.push({
+      type: "dynamic-tool",
+      toolName,
+      toolCallId: reportedToolCallId,
+      state: "done",
+      args: "",
+      output: chunk.content,
+    }) - 1;
+    onChunk?.({
+      type: "tool-call-start",
+      toolName,
+      toolCallId: reportedToolCallId,
+    });
   }
 
   parts[activeToolIndex].state = "done";

@@ -5,7 +5,12 @@ export const validate = (req, res, next) => {
 
   if (!errors.isEmpty()) {
     return res.status(400).json({
-      errors: errors.array(),
+      errors: errors.array({ onlyFirstError: true }).map(({ msg, path, location }) => ({
+        type: "field",
+        msg,
+        path,
+        location,
+      })),
       success: false,
     });
   }
@@ -25,6 +30,7 @@ export const registerValidator = [
 
   body("email")
     .trim()
+    .toLowerCase()
     .notEmpty()
     .withMessage("Email is required")
     .isEmail()
@@ -33,11 +39,12 @@ export const registerValidator = [
   body("password")
     .notEmpty()
     .withMessage("Password is required")
-    // bcrypt truncates at 72 bytes; the model enforces maxlength: 72, so the
-    // route validator must reject longer input up-front (400) instead of
-    // letting Mongoose fail the save with a 500.
+    .bail()
     .isLength({ min: 6, max: 72 })
-    .withMessage("Password must be between 6 and 72 characters long"),
+    .withMessage("Password must be between 6 and 72 characters long")
+    .bail()
+    .custom((password) => Buffer.byteLength(password, "utf8") <= 72)
+    .withMessage("Password must not exceed 72 bytes"),
 
   validate,
 ];
@@ -45,13 +52,20 @@ export const registerValidator = [
 export const loginValidator = [
   body("email")
     .trim()
+    .toLowerCase()
     .notEmpty()
     .withMessage("Email is required.")
     .isEmail()
     .withMessage("Please provide a valid email"),
 
   body("password")
-    .notEmpty().withMessage("Password is required")
-    .isLength({ min: 6, max: 72 }).withMessage("Password must be between 6 and 72 characters"),
-  validate
+    .notEmpty()
+    .withMessage("Password is required")
+    .bail()
+    .isLength({ min: 6, max: 72 })
+    .withMessage("Password must be between 6 and 72 characters long")
+    .bail()
+    .custom((password) => Buffer.byteLength(password, "utf8") <= 72)
+    .withMessage("Password must not exceed 72 bytes"),
+  validate,
 ];

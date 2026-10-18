@@ -19,7 +19,7 @@ export const register = async (req, res) => {
 
     if (isUserAlreadyExist) {
       if (
-        process.env.NODE_ENV !== "production" &&
+        config.NODE_ENV === "development" &&
         !isUserAlreadyExist.verified
       ) {
         const emailVerificationToken = jwt.sign(
@@ -60,6 +60,7 @@ export const register = async (req, res) => {
       { expiresIn: "1h" },
     );
 
+    let verificationEmailSent = false;
     try {
       await sendEmail({
         to: email,
@@ -72,14 +73,18 @@ export const register = async (req, res) => {
                 <p>Best regards,<br/>The ResearchAI Team.</p>
                 `,
       });
+      verificationEmailSent = true;
     } catch (error) {
       console.warn("Verification email could not be sent:", error.message);
     }
 
     const response = {
-      message: "User registered successfully. Please check your email to verify your account.",
+      message: verificationEmailSent
+        ? "User registered successfully. Please check your email to verify your account."
+        : "Account created, but the verification email could not be sent. Please try again later.",
       success: true,
       verified: false,
+      verificationEmailSent,
       user: {
         id: user._id,
         username: user.username,
@@ -87,7 +92,7 @@ export const register = async (req, res) => {
       },
     };
 
-    if (process.env.NODE_ENV !== "production") {
+    if (config.NODE_ENV === "development") {
       response.verificationUrl = `${config.SERVER_URL}/api/auth/verify-email?token=${emailVerificationToken}`;
     }
 
@@ -151,7 +156,7 @@ export const login = async (req, res) => {
       { expiresIn: "7d" },
     );
 
-    const isProd = process.env.NODE_ENV === "production";
+    const isProd = config.NODE_ENV === "production";
     res.cookie("token", token, {
       httpOnly: true,
       secure: isProd,
@@ -342,8 +347,8 @@ export const verifyEmail = async (req, res) => {
 export const logout = async (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: config.NODE_ENV === "production",
+    sameSite: config.NODE_ENV === "production" ? "none" : "lax",
   });
 
   res.status(200).json({
@@ -358,7 +363,10 @@ export const logout = async (req, res) => {
  * @access Public
  */
 export const resendVerification = async (req, res) => {
-  const { email } = req.body;
+  const email =
+    typeof req.body.email === "string"
+      ? req.body.email.trim().toLowerCase()
+      : "";
 
   if (!email) {
     return res.status(400).json({

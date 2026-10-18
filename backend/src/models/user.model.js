@@ -19,8 +19,12 @@ export const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minlength: [6,"Password must be at least 6 characters long"],
-      maxlength: [72,"Password must be at most 72 characters long"],
+      minlength: [6, "Password must be at least 6 characters long"],
+      maxlength: [72, "Password must be at most 72 characters long"],
+      validate: {
+        validator: (value) => Buffer.byteLength(value, "utf8") <= 72,
+        message: "Password must not exceed 72 bytes",
+      },
     },
     verified: {
       type: Boolean,

@@ -45,12 +45,20 @@ if (!process.env.TAVILY_API_KEY) {
   throw new Error("TAVILY_API_KEY is not defined in environment variables");
 }
 
-// Validate NODE_ENV to prevent production deployment with dev behavior
-if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "development") {
-  console.warn("NODE_ENV not set. Defaulting to development behavior.");
+const NODE_ENV =
+  process.env.NODE_ENV ||
+  (process.env.npm_lifecycle_event === "dev" ? "development" : undefined);
+
+if (!NODE_ENV) {
+  throw new Error("NODE_ENV is not defined in environment variables");
+}
+
+if (!["production", "development", "test"].includes(NODE_ENV)) {
+  throw new Error("NODE_ENV must be production, development, or test");
 }
 
 export const config = {
+  NODE_ENV,
   PORT: process.env.PORT,
   MONGO_URI: process.env.MONGO_URI,
   EMAIL_SECRET: process.env.EMAIL_SECRET,

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import chatModel from "../models/chat.model.js";
 import messageModel from "../models/message.model.js";
 import { generateResponse, generateChatTitle, buildContext } from "../services/ai.service.js";
@@ -180,7 +181,7 @@ const paginationParams = (req, fallbackLimit) => {
 export const getChats = async (req, res) => {
   try {
     const userId = req.user?.id || req.user?._id;
-    const { limit, page, isPaged } = paginationParams(req, 0);
+    const { limit, page, isPaged } = paginationParams(req, 50);
     const filter = { user: userId, deletedAt: null };
 
     const baseQuery = () =>
@@ -227,7 +228,7 @@ export const getMessages = async (req, res) => {
       return res.status(404).json({ message: "Chat not found.", success: false });
     }
 
-    const { limit, page, isPaged } = paginationParams(req, 0);
+    const { limit, page, isPaged } = paginationParams(req, 50);
     const filter = { chat: chatId, deletedAt: null };
 
     const baseQuery = () =>
@@ -274,24 +275,33 @@ export const deleteChat = async (req, res) => {
   try {
     const { chatId } = req.params;
     const userId = req.user?.id || req.user?._id;
+    const deletedAt = new Date();
+    const session = await mongoose.startSession();
+    let chat;
 
-    const chat = await chatModel.findOneAndUpdate(
-      { _id: chatId, user: userId, deletedAt: null },
-      { $set: { deletedAt: new Date() } },
-      { returnDocument: "after" }
-    );
+    try {
+      await session.withTransaction(async () => {
+        chat = await chatModel.findOneAndUpdate(
+          { _id: chatId, user: userId, deletedAt: null },
+          { $set: { deletedAt } },
+          { returnDocument: "after", session },
+        );
+
+        if (!chat) return;
+
+        await messageModel.updateMany(
+          { chat: chatId, deletedAt: null },
+          { $set: { deletedAt } },
+          { session },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
 
     if (!chat) {
       return res.status(404).json({ message: "Chat not found.", success: false });
     }
-
-    // Cascade soft-delete: mark every message of the chat as deleted too.
-    // Without this, "deleted" chats leak their message documents forever.
-    // The TTL index on the message's deletedAt purges them after 30 days.
-    await messageModel.updateMany(
-      { chat: chatId, deletedAt: null },
-      { $set: { deletedAt: new Date() } }
-    );
 
     res.status(200).json({ message: "Chat deleted successfully.", success: true });
   } catch (err) {

@@ -15,7 +15,7 @@ router.get("/health", async (req, res) => {
     timestamp: new Date().toISOString(),
     database: dbStatus,
     version: process.env.npm_package_version || "unknown",
-    environment: config.NODE_ENV || "development",
+    environment: config.NODE_ENV,
   });
 });
 
