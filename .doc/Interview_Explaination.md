@@ -520,4 +520,212 @@ frontend/src/
 
 ---
 
+## 🗂️ Conversation History — Deep Dive & Interview Q&A
+
+> This is one of the most commonly probed areas in AI project interviews. Know every layer — how history is **built**, **sent to the AI**, **persisted**, and **reloaded**.
+
+---
+
+### How Conversation History Works — End to End
+
+```
+User sends a new message
+         │
+         ▼
+1. sendMessage() in chat.controller.js
+         │
+         ├── resolveChat()  →  find or create the Chat document
+         ├── createUserMessage()  →  persist user's message to MongoDB
+         │
+         ▼
+2. buildContext()  ← ai.service.js
+         │
+         │   messageModel.find({ chat: chatId, deletedAt: null })
+         │     .select("role content parts")
+         │     .sort({ createdAt: 1 })       ← oldest first
+         │     .lean()
+         │
+         │   → slice last 10 messages
+         │   → trim leading AI messages (start from first "user" turn)
+         │
+         ▼
+3. toLangchainMessages(contextMessages)
+         │
+         ├── [SystemMessage]  ← static system prompt (ResearchAI identity + rules)
+         ├── [HumanMessage]   ← each role === "user"
+         └── [AIMessage]      ← each role === "ai"
+         │
+         ▼
+4. agent.stream({ messages })  →  Gemini sees the full conversation window
+         │
+         ▼
+5. AI response streamed + persisted as new Message document
+         │
+         └── next message cycle: this response is now part of context
+```
+
+---
+
+### `buildContext()` — The Context Window Logic
+
+```js
+// ai.service.js
+const MAX_MESSAGES = 10;
+
+export const buildContext = (messages) => {
+  const recentMessages = messages.slice(-MAX_MESSAGES);      // last 10
+  const firstUserMessage = recentMessages.findIndex(         // trim orphan AI turns
+    (message) => message.role === "user"
+  );
+  return firstUserMessage === -1
+    ? recentMessages
+    : recentMessages.slice(firstUserMessage);                // start from first user turn
+};
+```
+
+**Why slice from the first user message?**
+After slicing the last 10 messages, it's possible the window starts with an AI message (if there were many exchanges). Sending an AI message as the first item to Gemini is invalid — the conversation must start with a user turn. `findIndex` trims any orphan leading AI messages.
+
+---
+
+### How History is Persisted
+
+Every message — user and AI — is written to MongoDB via `persistMessage()` in `message.service.js`:
+
+```js
+const persistMessage = async (payload) => {
+  const parsed = createMessageSchema.parse(payload);  // Zod validation
+  const message = await messageModel.create(parsed);
+
+  // Keep Chat.lastMessageAt in sync for sidebar ordering
+  await chatModel.updateOne(
+    { _id: payload.chat },
+    { $set: { lastMessageAt: new Date() } }
+  );
+  return message;
+};
+```
+
+Each **Message document** stores:
+| Field | Purpose |
+|---|---|
+| `content` | Full plain-text response (for context window — fast to query) |
+| `role` | `"user"` or `"ai"` |
+| `parts` | Structured array: text blocks + tool call records (for UI replay) |
+| `citations` | Deduplicated web sources `[{ index, title, url }]` |
+| `chat` | Foreign key → parent Chat document |
+| `deletedAt` | Soft delete timestamp (null = active) |
+
+---
+
+### How History is Reloaded on Page Refresh
+
+```
+User reopens a past chat (clicks sidebar)
+         │
+         ▼
+handleOpenChat(chatId)  ← useChat.js
+         │
+         ├── Check: chats[chatId].messagesLoaded?
+         │     YES → skip network call (Redux cache hit)
+         │     NO  → call GET /api/chat/:chatId/messages
+         │
+         ▼
+getMessages()  ← chat.controller.js
+         │
+         ├── Ownership check: findOne({ _id: chatId, user: userId, deletedAt: null })
+         ├── messageModel.find({ chat: chatId, deletedAt: null })
+         │     .sort({ createdAt: 1 })
+         │     .lean()
+         │
+         ├── Manually compute hasCitations:
+         │     messages.map(msg => ({ ...msg, hasCitations: Boolean(msg.citations?.length) }))
+         │     (lean() strips Mongoose virtuals — computed inline instead)
+         │
+         └── dispatch(addMessages({ chatId, messages }))  →  Redux cache
+```
+
+**Key detail:** `messagesLoaded: true` is set once messages are fetched. If the user switches between chats rapidly, subsequent visits to the same chat are served instantly from Redux — no extra network round-trips.
+
+---
+
+### 🔁 Conversation History — Interviewer Q&A
+
+---
+
+**Q: How does the AI know what was said earlier in the conversation?**
+
+> "Every time the user sends a new message, I fetch all messages for that chat from MongoDB — sorted oldest-first — using `messageModel.find({ chat: chatId, deletedAt: null })`. Then `buildContext()` slices the last 10 messages and converts them into LangChain `HumanMessage` and `AIMessage` objects, prepended by a `SystemMessage`. This full array is passed to the Gemini agent, which sees the conversation as continuous context."
+
+---
+
+**Q: What is the context window limit and why did you choose 10 messages?**
+
+> "I chose 10 messages — 5 user turns + 5 AI replies — as a practical balance between context relevance and token cost. Gemini Flash has a large context window, but sending 50+ messages on every request wastes tokens and increases latency. The last 10 messages cover the immediate topic of the conversation. In a production system I'd move to a sliding window with token counting or use a vector store for semantic retrieval of relevant past messages."
+
+---
+
+**Q: What happens if the context window starts with an AI message?**
+
+> "That's exactly what `buildContext()` guards against. After slicing the last 10 messages, if the window starts with an AI message — which happens when there are many turns and the first user message got sliced out — passing that to Gemini would cause an API error. So I use `findIndex` to find the first user message in the window and trim everything before it. The conversation must always start with a user turn."
+
+---
+
+**Q: Do you store conversation history in the database or just in memory?**
+
+> "Both, actually — for different purposes. During a live streaming session, the conversation parts accumulate in a `streamingPartsRef` on the frontend (in-memory React ref) for real-time display. Once the stream completes, the final AI message is persisted to MongoDB with the full `content` string, the structured `parts` array (text blocks + tool call records), and the deduplicated `citations`. On the next request, messages are loaded from MongoDB — so history survives page refreshes, server restarts, and multiple devices."
+
+---
+
+**Q: Why do you store `parts` separately from `content`?**
+
+> "The `content` field is a flat string — the complete text of the AI's response. It's used as the context window input for the next message because that's all the AI needs: plain text. But `parts` is a structured array of `{ type: 'text', text }` and `{ type: 'dynamic-tool', toolName, args, output, state }` objects. This is used by the frontend to replay *exactly what happened* — which web searches the agent ran, what arguments it used, what it returned — rendered as a visual 'Searched the web for X' card. Without `parts`, reopening an old chat would just show the final answer with no trace of the tool calls."
+
+---
+
+**Q: How do you prevent one user from reading another user's chat history?**
+
+> "Every single query against the Chat and Message collections includes `user: userId` as a filter condition — the `userId` comes from the verified JWT token in the middleware. So `chatModel.findOne({ _id: chatId, user: userId })` — even if an attacker guesses or reuses another user's `chatId`, the query returns null and they get a 404. This closes the classic IDOR vulnerability. Messages are also protected indirectly — I only fetch messages after confirming the parent chat belongs to the user."
+
+---
+
+**Q: What if a user sends thousands of messages? Doesn't that hurt performance?**
+
+> "A few things prevent this. First, `buildContext()` only ever sends the last 10 messages to the AI — the query still fetches all messages with `.sort({ createdAt: 1 }).lean()`, but `lean()` makes it very fast since it bypasses Mongoose document instantiation. Second, there's a `getMessages()` pagination system — `?page=&limit=` — so the frontend can load messages in pages rather than all at once. Third, the Message schema enforces a `maxlength: 100000` on `content` to prevent unbounded document growth. And fourth, soft-deleted messages (from deleted chats) are auto-purged by MongoDB's TTL monitor after 30 days."
+
+---
+
+**Q: Can a user continue a conversation from where they left off?**
+
+> "Yes, that's a core feature. Every Chat has a persistent `_id`. When the user clicks a past chat in the sidebar, `handleOpenChat(chatId)` checks if `messagesLoaded` is already true in Redux — if so, it serves from cache instantly. If not, it calls `GET /api/chat/:chatId/messages`, loads the full message history, and stores it in Redux. The next new message the user sends includes that `chatId` in the request body — `resolveChat()` finds the existing chat by ID (verifying ownership), and the full stored history feeds into `buildContext()` for the AI context window."
+
+---
+
+**Q: What's the difference between `chat.slices.js` and the database for history?**
+
+> "Redux is the **client-side cache** — fast, in-memory, gone on page refresh. The database is the **source of truth** — persistent, survives everything. The architecture is: on first load of a chat, messages come from MongoDB and are stored in Redux under `chats[chatId].messages`. For the current active stream, incoming SSE events update `streamingPartsRef` (a React ref, not even Redux — avoids unnecessary renders) and only at `done` do they commit to Redux and the DB simultaneously. So Redux is always a reflection of what's in the DB, populated lazily on demand."
+
+---
+
+**Q: How does the `hasCitations` field work across a reload?**
+
+> "This is a subtle Mongoose gotcha worth mentioning. `hasCitations` is defined as a virtual field on the Message schema — `this.citations.length > 0` — and it works perfectly when you do `message.toJSON()`. But when I use `.lean()` for performance (which skips Mongoose document instantiation), schema virtuals are stripped. The `lean({ virtuals: true })` option exists but requires the `mongoose-lean-virtuals` plugin, which I didn't add. So instead, after the lean query I do a `.map()` that manually computes `hasCitations: Boolean(msg.citations?.length)`. This is explicitly documented in the code with a comment explaining the Mongoose 9.9.1 behavior."
+
+---
+
+### 📌 Conversation History — One-Liner Cheatsheet
+
+| Topic | One-liner |
+|---|---|
+| **Context window** | Last 10 messages, trimmed to start on first user turn, converted to LangChain messages |
+| **Persistence** | Every message saved to MongoDB with `content` (flat text) + `parts` (structured) + `citations` |
+| **Reload** | `GET /api/chat/:chatId/messages` → Redux cache → `messagesLoaded: true` prevents re-fetch |
+| **IDOR** | All queries include `user: userId` — wrong user gets 404, not data |
+| **Performance** | `.lean()` for fast queries, pagination for large histories, 10-message AI window |
+| **hasCitations** | Virtual stripped by lean() — manually computed in `.map()` after query |
+| **Parts vs Content** | `content` = plain text for AI context; `parts` = structured tool call replay for UI |
+| **Streaming state** | `streamingPartsRef` (React ref) accumulates during stream → committed to Redux + DB on `done` |
+
+---
+
 *Generated for interview preparation — ResearchAI by Sham Jadhav*
